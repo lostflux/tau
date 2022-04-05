@@ -5,7 +5,7 @@ import qualified VigenereCipher as Vigenere
 
 main :: IO ()
 main = do
-  -- text <- readFile "./app/TEXT"
+  -- text <- readFile "./data/TEXT"
   -- Shift.bruteforce text
 
   prompt
@@ -26,7 +26,7 @@ main = do
       Shift.bruteforce message
       main
     4 -> do
-      message <- readFile "./app/TEXT2"
+      message <- readFile "./data/TEXT2"
       -- message <- getMessage
       -- key <- getKey
       let key = 7876565434321123434565678788787656543432112343456567878878765654433211234 :: Integer
