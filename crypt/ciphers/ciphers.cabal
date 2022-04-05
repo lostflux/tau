@@ -15,16 +15,28 @@ maintainer:          amittaijoel@outlook.com
 -- category:
 extra-source-files:  CHANGELOG.md
 
-library ShiftCipher
-  exposed-modules:    ShiftCipher
+library Common
+  exposed-modules:    Common
   hs-source-dirs:     app
   build-depends:      base >=4.13.0.0
   default-language:   Haskell2010
 
+library ShiftCipher
+  exposed-modules:    ShiftCipher
+  hs-source-dirs:     app
+  build-depends:      base >=4.13.0.0, Common
+  default-language:   Haskell2010
+
+library VigenereCipher
+  exposed-modules:    VigenereCipher
+  hs-source-dirs:     app
+  build-depends:      base >=4.13.0.0, Common
+  default-language:   Haskell2010
+
 executable ciphers
   main-is:             Main.hs
-  other-modules:       ShiftCipher
+  other-modules:       ShiftCipher, VigenereCipher, Common
   -- other-extensions:
-  build-depends:       base >=4.13.0.0
+  build-depends:       base >=4.13.0.0, text
   hs-source-dirs:      app
   default-language:    Haskell2010
