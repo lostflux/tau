@@ -4,7 +4,6 @@
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-
 module ShiftCipher (
     encrypt
   , decrypt
@@ -12,15 +11,13 @@ module ShiftCipher (
   , bruteforce
 ) where
 
-import Prelude hiding (lookup)
-
 import Data.Char ( ord, chr )
 import Data.Foldable ( for_ )
 import Data.List ( elemIndex )
-import Data.Maybe (fromJust)
 import Common ( clean, lowercase, uppercase )
+import Prelude
 
----------- Cipher
+-- | Encrypt a message, per the given key.
 encrypt :: Int -> String -> String
 encrypt key str = do
   let rawText = lines str
@@ -28,6 +25,7 @@ encrypt key str = do
   let ciphertext = map (shift key) cleanedText
   unlines ciphertext
 
+-- | Decrypt a message, per the given key.
 decrypt :: Int -> String -> String
 decrypt key ciphertext = do
   let rawText = lines ciphertext
@@ -45,7 +43,7 @@ shift n (c:cs) = shiftChar n c : shift n cs
       let pos = ord c - ord 'A'
       in chr ((pos + n) `mod` 26 + ord 'A')
 
-
+-- | Run a brute-force attack: try every possible shift in the English alphabet.
 bruteforceAttack :: String -> [String]
 bruteforceAttack str = checkAll 0 str []
   where
@@ -53,8 +51,14 @@ bruteforceAttack str = checkAll 0 str []
     checkAll n text results =
       checkAll (n+1) text (results ++ [decrypt n text])
 
+-- | Run a brute-force attack: try every possible shift in the English alphabet.
+-- Print results instead of returning them to sender.
 bruteforce :: [Char] -> IO ()
 bruteforce str = do
   let results = bruteforceAttack str
   for_ results $ \result -> do
     putStrLn $ "\t" ++ show (fromJust (elemIndex result results)) ++ ": " ++ result
+
+fromJust :: Maybe Int -> Int
+fromJust (Just x) = x
+fromJust Nothing = 0
