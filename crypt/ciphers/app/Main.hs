@@ -29,7 +29,7 @@ main = do
       message <- readFile "./data/TEXT2"
       -- message <- getMessage
       -- key <- getKey
-      let key = 7876565434321123434565678788787656543432112343456567878878765654433211234 :: Integer
+      let key = 7876565434321123434565678788787656543432112343456567878878765654433211234
       results <- Vigenere.decrypt key message
       putStrLn $ "\nresults: \n\t" ++ results
       main
