@@ -33,9 +33,15 @@ library VigenereCipher
   build-depends:      base >=4.13.0.0, Common
   default-language:   Haskell2010
 
+library SubstitutionCipher
+  exposed-modules:    SubstitutionCipher
+  hs-source-dirs:     app
+  build-depends:      base >=4.13.0.0, Common
+  default-language:   Haskell2010
+
 executable ciphers
   main-is:             Main.hs
-  other-modules:       ShiftCipher, VigenereCipher, Common
+  other-modules:       ShiftCipher, VigenereCipher, Common, SubstitutionCipher
   -- other-extensions:
   build-depends:       base >=4.13.0.0, text
   hs-source-dirs:      app

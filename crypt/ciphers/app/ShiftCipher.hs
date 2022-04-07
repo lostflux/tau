@@ -47,6 +47,8 @@ shift n (c:cs) = shiftChar n c : shift n cs
 bruteforceAttack :: String -> [String]
 bruteforceAttack str = checkAll 0 str []
   where
+    -- | Check all possible shifts, up to 26 then stop.
+    checkAll :: Int -> String -> [String] -> [String]
     checkAll 26 _ arr = arr
     checkAll n text results =
       checkAll (n+1) text (results ++ [decrypt n text])

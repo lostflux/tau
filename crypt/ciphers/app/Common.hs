@@ -12,6 +12,7 @@ module Common (
   , lowercase
   , toUpper
   , toLower
+  , dropLines
   , chr
   , ord
   , split
@@ -41,6 +42,9 @@ isalpha c = not (isspace c || ispunct c)
 lowercase, uppercase :: String -> String
 -- | Convert string to lowercase
 lowercase = map toLower
+
+dropLines :: String -> String
+dropLines = filter (/= '\n')
 
 -- | convert string to uppercase
 uppercase = map toUpper
