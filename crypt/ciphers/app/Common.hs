@@ -5,6 +5,7 @@
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
+-- | This module implements common functionalities for Text
 module Common (
     clean
   , toInt
@@ -49,6 +50,7 @@ dropLines = filter (/= '\n')
 -- | convert string to uppercase
 uppercase = map toUpper
 
+-- | Read the integer value of a single character.
 toInt :: Char -> Int
 toInt x = read [x] :: Int
 

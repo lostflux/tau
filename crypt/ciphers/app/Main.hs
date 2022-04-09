@@ -7,8 +7,8 @@ import Control.Monad (void)
 
 main :: IO ()
 main = do
-  text <- readFile "./data/TEXT"
-  Shift.bruteforce text
+  -- text <- readFile "./data/TEXT"
+  -- Shift.bruteforce text
 
   prompt
   mode <- readLn :: IO Int
@@ -28,8 +28,8 @@ main = do
       Shift.bruteforce message
       main
     4 -> do
-      message <- readFile "./data/TEXT2"
-      -- message <- getMessage
+      -- message <- readFile "./data/TEXT2"
+      message <- getMessage
       -- key <- getKey
       let key = 7876565434321123434565678788787656543432112343456567878878765654433211234
       results <- Vigenere.decrypt key message

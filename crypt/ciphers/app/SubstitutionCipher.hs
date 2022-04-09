@@ -14,16 +14,20 @@ module SubstitutionCipher (
   , standardFrequencies
   , bruteforce
   , Pairing
+  , unset
+  , set
+  , rotate
 ) where
 
 import Data.List (group, sort, sortBy)
-import Data.Foldable (for_)
 import Data.Maybe (fromMaybe)
+import GHC.IO.Handle (hFlush)
+import Data.Foldable (for_)
+import System.IO (stdout)
 import Common (dropLines)
 import Prelude
-import GHC.IO.Handle (hFlush)
-import System.IO (stdout)
 
+-- | Record of an item and a recorded frequency.
 data Freq a = Freq { item :: a, freq :: Double }
 
 type Pairing = (Char, Char)
@@ -62,7 +66,6 @@ highest = get 0
 encrypt :: String -> IO String
 encrypt = undefined
 decrypt :: String -> IO String
--- decrypt = undefined
 decrypt plaintext = do
   let cleaned = dropLines plaintext
   let freqs = frequencies cleaned          :: [Freq Char]
@@ -91,7 +94,7 @@ decrypt plaintext = do
 
 
 
-  return "..."
+  return "..."  -- Default return when we don't really care.
 
 bruteforce :: String -> IO String
 -- decrypt = undefined
@@ -168,8 +171,8 @@ match :: [Freq Char] -> [Freq Char] -> Int -> [[Pairing]]
 match _ [] _ = []
 match [] _ _ = []
 match [x] [y] _ = [[(item x, item y)]]
-match [x] (y:ys) n = [[(item x, item y)]]
-match (x:xs) [y] n = [[(item x, item y)]]
+match [x] (y:_) _ = [[(item x, item y)]]
+match (x:_) [y] _ = [[(item x, item y)]]
 match st freqs n = do
   let (letter, rest) = highest freqs                  :: (Char, [Freq Char])
   let (s', st') = get 0 st                            :: (Char, [Freq Char])
