@@ -11,10 +11,10 @@ module ShiftCipher (
   , bruteforce
 ) where
 
-import Data.Char ( ord, chr )
-import Data.Foldable ( for_ )
-import Data.List ( elemIndex )
-import Common ( clean, lowercase, uppercase )
+import Data.Char        ( ord, chr )
+import Data.Foldable    ( for_ )
+import Data.List        ( elemIndex )
+import Common           ( clean, lowercase, uppercase )
 import Prelude
 
 -- | Encrypt a message, per the given key.

@@ -1,12 +1,12 @@
 module Main where
 
-import qualified ShiftCipher as Shift
-import qualified VigenereCipher as Vigenere
-import qualified SubstitutionCipher as Substitution
-import qualified AbstractAlgebra as Algebra
-import System.IO (stdout, hFlush)
-import Control.Monad (void)
-import Control.Monad.Cont (join)
+import qualified ShiftCipher          as  Shift
+import qualified VigenereCipher       as  Vigenere
+import qualified SubstitutionCipher   as  Substitution
+import qualified AbstractAlgebra      as  Algebra
+import           System.IO            (stdout, hFlush)
+import           Control.Monad        (void)
+import           Control.Monad.Cont   (join)
 
 main :: IO ()
 main = do

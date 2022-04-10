@@ -12,7 +12,7 @@ module VigenereCipher (
 ) where
 
 import Prelude
-import Common ( toInt, clean, lowercase, uppercase, splitT )
+import Common   ( toInt, clean, lowercase, uppercase, splitT )
 
 -- | Encrypts a plaintext using a key, per the vigenère cipher.
 encrypt :: String -> String -> String
