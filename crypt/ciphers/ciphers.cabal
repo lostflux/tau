@@ -39,10 +39,15 @@ library SubstitutionCipher
   build-depends:      base >=4.13.0.0, Common
   default-language:   Haskell2010
 
+library AbstractAlgebra
+  exposed-modules:    AbstractAlgebra
+  hs-source-dirs:     app
+  build-depends:      base >=4.13.0.0, Common
+  default-language:   Haskell2010
+
 executable ciphers
   main-is:             Main.hs
-  other-modules:       ShiftCipher, VigenereCipher, Common, SubstitutionCipher
-  -- other-extensions:
-  build-depends:       base >=4.13.0.0, text
+  other-modules:       ShiftCipher, VigenereCipher, Common, SubstitutionCipher, AbstractAlgebra
+  build-depends:       base >=4.13.0.0, text, mtl
   hs-source-dirs:      app
   default-language:    Haskell2010
