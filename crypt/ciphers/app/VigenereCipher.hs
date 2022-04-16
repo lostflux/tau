@@ -1,18 +1,19 @@
+{-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module VigenereCipher (
-    encrypt
-  , decrypt
-) where
+module VigenereCipher
+  ( encrypt,
+    decrypt,
+  )
+where
 
+import Common  (clean, lowercase, splitT, toInt, uppercase)
 import Prelude
-import Common   ( toInt, clean, lowercase, uppercase, splitT )
 
 -- | Encrypts a plaintext using a key, per the vigenère cipher.
 encrypt :: String -> String -> String
@@ -31,14 +32,14 @@ decrypt n str = do
     build :: String -> [String] -> String -> IO String
     build _ [] result = return result
     build [] _ result = return result
-    build (k:ks) matrix result =
+    build (k : ks) matrix result =
       let key = toInt k
           line = matrix !! (key - 1)
           letter = line !! length result
-      in build ks matrix $ result ++ [letter]
+       in build ks matrix $ result ++ [letter]
 
 printMatrix :: [String] -> IO ()
 printMatrix [] = return ()
-printMatrix (x:xs) = do
+printMatrix (x : xs) = do
   putStrLn $ "  " ++ x
   printMatrix xs

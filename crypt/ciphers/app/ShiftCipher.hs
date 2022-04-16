@@ -1,6 +1,6 @@
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
@@ -11,10 +11,10 @@ module ShiftCipher (
   , bruteforce
 ) where
 
-import Data.Char        ( ord, chr )
-import Data.Foldable    ( for_ )
-import Data.List        ( elemIndex )
-import Common           ( clean, lowercase, uppercase )
+import Common        (clean, lowercase, uppercase)
+import Data.Char     (chr, ord)
+import Data.Foldable (for_)
+import Data.List     (elemIndex)
 import Prelude
 
 -- | Encrypt a message, per the given key.
@@ -63,4 +63,4 @@ bruteforce str = do
 
 fromJust :: Maybe Int -> Int
 fromJust (Just x) = x
-fromJust Nothing = 0
+fromJust Nothing  = 0

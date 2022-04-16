@@ -1,7 +1,7 @@
+{-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
@@ -20,7 +20,7 @@ module Common (
   , splitT
 ) where
 
-import Data.Char (toLower, toUpper, chr,  ord )
+import Data.Char (chr, ord, toLower, toUpper)
 import Data.List (transpose)
 import Prelude
 
@@ -56,8 +56,8 @@ toInt x = read [x] :: Int
 
 split :: Int -> String -> [String]
 split 0 results = [results]
-split _ [] = []
-split n str = let (a,b) = splitAt n str in a : split n b
+split _ []      = []
+split n str     = let (a,b) = splitAt n str in a : split n b
 
 splitT :: Int -> String -> [String]
 splitT n str = transpose $ split n str

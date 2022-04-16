@@ -1,9 +1,10 @@
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE FlexibleContexts #-}
 -- {-# HLINT ignore "[]" #-}
 
 module SubstitutionCipher (
@@ -17,15 +18,16 @@ module SubstitutionCipher (
   , unset
   , set
   , rotate
+  , problem
 ) where
 
-import Data.List (group, sort, sortBy)
-import Data.Maybe (fromMaybe)
-import GHC.IO.Handle (hFlush)
+import Common        (dropLines)
 import Data.Foldable (for_)
-import System.IO (stdout)
-import Common (dropLines)
+import Data.List     (group, sort, sortBy)
+import Data.Maybe    (fromMaybe)
+import GHC.IO.Handle (hFlush)
 import Prelude
+import System.IO     (stdout)
 
 -- | Record of an item and a recorded frequency.
 data Freq a = Freq { item :: a, freq :: Double }
@@ -186,7 +188,7 @@ match st freqs n = do
 --   where
 --     iter :: Int -> [Freq Char] -> [Freq Char] -> [[Pairing]] -> [[Pairing]]
 --     iter 0 _ _ acc = acc
---     iter n st@(s:ss) freqs acc = 
+--     iter n st@(s:ss) freqs acc =
 --       iter (n-1) ss freqs (acc ++  st freqs)
   -- for [1..n] $ \i -> do
   --   let current = []
@@ -234,3 +236,41 @@ standardFrequencies = sortBy (flip compare) [
     Freq 'y' 1.974,
     Freq 'z' 0.074
   ]
+
+problem :: IO ()
+problem = do
+  print matchings
+  let matchings'' = matchings
+  plains matchings
+  ciphers matchings
+  for_ [2..26] $ \n -> do
+    putStr $ "n: " ++ show n ++ " "
+    putStrLn $ getKey matchings'' n
+
+matchings :: [Pairing]
+matchings = map getFirst . group . sortBy compareFirst $ zip plaintext ciphertext ++ [('z', '-'), ('x', '-'), ('q', '-'), ('k', '-'), ('j', '-')]
+  where
+    plaintext   = "itwasdisclosedyesterdaythatseveralinformalbutdirectcontactshavebeenmadewithpoliticalrepresentativesofthevietconginmoscow"
+    ciphertext  = "UZQSOVUOHXMOPVGPOZPEVSGZWSZOPFPESXUDBMETSXAIZVUEPHZHMDZSHZOWSFPAPPDTSVPQUZWYMXUZUHSXEPYEPOPDZSZUFPOMBZWPFUPZHMDJUDTMOHMQ"
+    compareFirst = \p1 p2 ->compare (fst p1) (fst p2)
+    getFirst = \(x:_) -> x
+
+plains :: [Pairing] -> IO ()
+plains = foldr ((>>) . putChar . fst) (return ())
+
+ciphers :: [Pairing] -> IO ()
+ciphers = foldr ((>>) . putChar . snd) (return ())
+
+
+getKey :: [Pairing] -> Int -> String
+getKey matchings' n = iter matchings' (26 `div` n) 0 ((26 `mod` n) + 1) ""
+  where
+    iter :: [Pairing] -> Int -> Int -> Int -> String -> String
+    iter [] _ _ _ acc = acc
+    iter (x:xs) stepsize currentstep 0 acc
+      | currentstep == 0 = iter xs stepsize 1 0 (acc ++ [snd x])
+      | otherwise = iter xs stepsize ((currentstep + 1) `mod` stepsize) 0 acc
+    iter (x:xs) stepsize currentstep overflow acc
+      | currentstep == 0 = iter xs stepsize 1 (overflow - 1) (acc ++ [snd x])
+      | otherwise = iter xs stepsize ((currentstep + 1) `mod` (stepsize + 1)) overflow acc
+

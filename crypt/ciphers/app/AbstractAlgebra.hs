@@ -1,24 +1,29 @@
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module AbstractAlgebra (
-    addN
-  , mulN
-  , subN
-  , divN
-  , invN
-  , gcd
-  , gcdL
-  , prompt
-  , run
-) where
+module AbstractAlgebra
+  ( addN,
+    mulN,
+    subN,
+    divN,
+    invN,
+    gcd,
+    gcdL,
+    prompt,
+    run,
+    extendedEuclidean
+  )
+where
 
-import Prelude hiding ( gcd )
+import Prelude hiding (gcd)
 
+-- | Compute multiplication modulo N.
+--
+--  The result is always in the range [0,N).
 mulN :: Integral a => a -> a -> a -> a
 mulN n a b = (a * b) `mod` n
 
@@ -27,7 +32,6 @@ addN n a b = (a + b) `mod` n
 
 subN :: Integral a => a -> a -> a -> a
 subN n a b = (a - b) `mod` n
-
 
 gcd :: Integer -> Integer -> Integer
 gcd = euclideanA
@@ -39,23 +43,30 @@ gcdL = euclideanL
     euclideanL a 0 = putStrLn ("gcd " ++ show a ++ " 0: " ++ show a) >> return a
     euclideanL 0 b = putStrLn ("gcd 0 " ++ show b ++ ": " ++ show b) >> return b
     euclideanL a b
-        | a == b  = do
-          putStrLn ("gcd " ++ show a ++ " " ++ show b ++ ": " ++ show b)
+      | a == b = do
+          putStrLn ("gcd (" ++ show (a `div` b) ++ ") " ++ show a ++ " " ++ show b ++ ": " ++ show b)
           return a
-        | a > b   = do
-          putStrLn ("gcd " ++ show a ++ " " ++ show b ++ "...")
+      | a > b = do
+          putStrLn ("gcd (" ++ show (a `div` b) ++ ") " ++ show a ++ " " ++ show b ++ "...")
           euclideanL b (a `mod` b)
-        | otherwise = do
-          putStrLn ("gcd " ++ show a ++ " " ++ show b ++ "...")
+      | otherwise = do
+          putStrLn ("gcd (" ++ show (a `div` b) ++ ") " ++ show a ++ " " ++ show b ++ "...")
           euclideanL a (b `mod` a)
 
+extendedEuclidean :: Integral b => b -> b -> (b, b, b)
+extendedEuclidean 0 y = (y, 0, 1)
+extendedEuclidean x y =
+  let (gcd, x', y') = extendedEuclidean (y `mod` x) x
+      x = y' - (y `div` x) * x'
+      y = x'
+  in (gcd, x, y)
 
 euclideanA :: Integral a => a -> a -> a
 euclideanA a 0 = a
 euclideanA 0 b = b
 euclideanA a b
-  | a == b  = a
-  | a > b   = euclideanA b (a `mod` b)
+  | a == b = a
+  | a > b = euclideanA b (a `mod` b)
   | otherwise = euclideanA a (b `mod` a)
 
 divN :: Integral a => a -> a -> a -> a
@@ -82,6 +93,7 @@ prompt = do
   putStrLn "5. Inverse"
   putStrLn "6. GCD"
   putStrLn "7. GCD (Logging)"
+  putStrLn "8. extendedEu"
   return ()
 
 run :: Integer -> Integer -> Integer -> Integer -> IO Integer
@@ -93,4 +105,8 @@ run action base a b = case action of
   5 -> return $ invN base a
   6 -> return $ gcd a b
   7 -> gcdL a b
+  8 -> do
+    let tu = extendedEuclidean a b
+    print tu
+    return $ (\(a, _, _) -> a) tu
   _ -> return 0
