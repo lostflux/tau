@@ -9,9 +9,10 @@ module ShiftCipher (
   , decrypt
   , bruteforceAttack
   , bruteforce
+  , shiftChar
 ) where
 
-import Common        (clean, lowercase, uppercase)
+import Common        (clean, lowercase, uppercase, charToInt)
 import Data.Char     (chr, ord)
 import Data.Foldable (for_)
 import Data.List     (elemIndex)
@@ -36,12 +37,27 @@ decrypt key ciphertext = do
 -- | Shift a string, the easy way -- add and mod.
 -- | We assume char is uppercase.
 shift :: Int -> String -> String
-shift _ [] = []
+shift _ []     = []
 shift n (c:cs) = shiftChar n c : shift n cs
   where
     shiftChar n c =
       let pos = ord c - ord 'A'
       in chr ((pos + n) `mod` 26 + ord 'A')
+
+
+-- | Shift a char by a given amount.
+--
+-- Designed for the Vigenere Cipher, it takes two chars (A=0, B=1, etc.)
+--
+-- Example:
+--
+-- >>> (char, step) = ('A' 'C')
+-- >>> shiftChar step char == 'C'
+shiftChar :: Char -> Char -> Char
+shiftChar step char =
+  let pos = charToInt char
+      step' = charToInt step
+  in chr $ (pos + step') `mod` 26 + ord 'A'
 
 -- | Run a brute-force attack: try every possible shift in the English alphabet.
 bruteforceAttack :: String -> [String]
@@ -54,6 +70,7 @@ bruteforceAttack str = checkAll 0 str []
       checkAll (n+1) text (results ++ [decrypt n text])
 
 -- | Run a brute-force attack: try every possible shift in the English alphabet.
+--
 -- Print results instead of returning them to sender.
 bruteforce :: [Char] -> IO ()
 bruteforce str = do

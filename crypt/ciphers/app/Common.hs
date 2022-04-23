@@ -9,6 +9,7 @@
 module Common (
     clean
   , toInt
+  , charToInt
   , uppercase
   , lowercase
   , toUpper
@@ -18,6 +19,8 @@ module Common (
   , ord
   , split
   , splitT
+  , invChar
+  , invWord
 ) where
 
 import Data.Char (chr, ord, toLower, toUpper)
@@ -61,3 +64,27 @@ split n str     = let (a,b) = splitAt n str in a : split n b
 
 splitT :: Int -> String -> [String]
 splitT n str = transpose $ split n str
+
+-- | Get the "vigenere complement" of a character.
+--
+-- The complement of 'A' is itself (shift by 0),
+--
+-- the complement of 'B' is 'Z' (shift by 1 and -1), etc.
+--
+-- NOTE: Contrast to the intuitive logic of 'A' going to 'Z'.
+--
+-- >>> invChar . invChar == id
+invChar :: Char -> Char
+invChar char = chr $ ord 'Z' - ((charToInt char - 1) `mod ` 26)
+
+-- | Get the "vigenere complement" of a word.
+--
+-- maps the complement of each character in the word.
+invWord :: String -> String
+invWord = map invChar
+
+-- | Given a character, return the integer value of the character.
+--
+-- We map all the letters to the range [0, 25] such that A=0, Z=25.
+charToInt :: Char -> Int
+charToInt c = ord (toUpper c) - ord 'A'

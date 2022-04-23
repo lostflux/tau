@@ -15,6 +15,7 @@ module SubstitutionCipher (
   , standardFrequencies
   , bruteforce
   , Pairing
+  , Freq
   , unset
   , set
   , rotate

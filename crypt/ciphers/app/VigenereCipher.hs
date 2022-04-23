@@ -2,28 +2,42 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
+
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module VigenereCipher
-  ( encrypt,
-    decrypt,
-  )
-where
+module VigenereCipher (
+    encrypt
+  , decrypt
+  , decryptShift
+  , equalities
+  , process
+) where
 
-import Common  (clean, lowercase, splitT, toInt, uppercase)
-import Prelude
+import Common        (clean, invWord, lowercase, splitT, toInt, uppercase, splitT)
+import Data.Foldable (maximumBy, for_)
+import Data.List     (elemIndices, groupBy, sort)
+import Prelude       hiding (repeat)
+import ShiftCipher   (shiftChar)
+import SubstitutionCipher (frequencies, Freq )
 
 -- | Encrypts a plaintext using a key, per the vigenère cipher.
+-- encrypt = undefined
 encrypt :: String -> String -> String
-encrypt = undefined
+encrypt text keyword = zipWith shiftChar cleanedText repeatedKeyword
+  where
+    cleanedText = clean text
+    repeatedKeyword = take (length cleanedText) (repeat keyword)
+
+decrypt :: String -> String -> String
+decrypt text keyword = encrypt text $ invWord keyword
 
 -- | Decrypts a ciphertext using a key, per the vigenère cipher
-decrypt :: Integer -> String -> IO String
-decrypt _ [] = return []
-decrypt 0 str = return str
-decrypt n str = do
+decryptShift :: Integer -> String -> IO String
+decryptShift _ [] = return []
+decryptShift 0 str = return str
+decryptShift n str = do
   let matrix = splitT 8 $ (uppercase . clean) str
   putStrLn "Matrix: "
   printMatrix matrix
@@ -43,3 +57,85 @@ printMatrix [] = return ()
 printMatrix (x : xs) = do
   putStrLn $ "  " ++ x
   printMatrix xs
+
+-- | Repeats a string, infinitely many times.
+--
+-- Since Haskell is a lazy language, we can easily
+-- get the first $n$ elements of an infinite sequence.
+repeat :: [a] -> [a]
+repeat str = str ++ repeat str
+
+equalities :: String -> String -> Int
+equalities [] _ = 0
+equalities _ [] = 0
+equalities (x : xs) (y : ys)
+  | x == y = 1 + equalities xs ys
+  | otherwise = equalities xs ys
+
+coincidences :: String -> [(Int, Int)]
+coincidences str = iter 0 ((lowercase . clean) str) []
+  where
+    iter :: Int -> String -> [(Int, Int)] -> [(Int, Int)]
+    iter _ [] result = result
+    iter 25 _ result = result
+    iter n arr result = iter (n+1) arr $ result ++ [(n, counts)]
+      where
+        counts = equalities arr $ drop n arr
+
+getStr :: IO String
+getStr = lowercase . clean <$> readFile "../data/vigenere01"
+
+process :: IO ()
+process = do
+  str <- getStr
+  -- let str = "hellohellwhellp"
+  print $ coincidences str
+  print $ ngrams 3 str
+  putStrLn $ tabulate $ recurrence (ngrams 3 str)
+  return ()
+
+tabulate :: [(String, [Int])] -> String
+tabulate [] = []
+tabulate (val:vals) =
+  let (x, y) = val
+      xs = tabulate vals
+   in x ++ ": " ++ show y ++ "\n" ++ xs
+
+
+ngrams :: Int -> String -> [String]
+ngrams 0 _          = []
+ngrams _ []         = []
+ngrams n str@(_:cs) = filter (\x -> length x == n) $ take n str : ngrams n cs
+
+rmdups :: [(String, [Int])] -> [(String, [Int])]
+rmdups =
+  map (maximumBy (\one two -> length (snd one) `compare` length (snd two)))
+  . groupBy (\one two -> fst one == fst two) . sort
+
+recurrence :: [String] -> [(String, [Int])]
+recurrence [] = []
+recurrence strings = rmdups $ iter strings 0 []
+  where
+    iter :: [String] -> Int -> [(String, [Int])] -> [(String, [Int])]
+    iter [] _ results = results
+    iter (str:strs) n results
+      | str `elem` strs = iter strs (n+1) $ results ++ [(str, n : map (+ (n + 1)) allIndices)]
+      | otherwise = iter strs (n+1) results
+        where
+          allIndices = elemIndices str strs
+
+run :: Int -> IO ()
+run n = putStrLn . (tabulate . recurrence . ngrams n) =<< getStr
+
+decrypt' :: IO ()
+decrypt' = putStrLn . lowercase <$> (`decrypt` "england") =<< getStr
+
+
+matrix :: IO [String]
+matrix = do
+  text <- getStr
+  let text' = clean . lowercase $ text
+  let m = splitT 7 text'
+  for_ m $ \x -> do
+    putStrLn x
+  return m
