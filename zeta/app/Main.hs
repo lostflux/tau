@@ -1,4 +1,9 @@
+-- {-# LANGUAGE ImportQualifiedPost #-}
 module Main where
 
+import qualified MyData as MDT
+
 main :: IO ()
-main = putStrLn "Hello, Haskell!"
+main = do
+  putStrLn "Hello, Haskell!"
+  MDT.tP1

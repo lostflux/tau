@@ -9,6 +9,7 @@ module MyData.Trie (
   , makeRootTrie
   , find
   , printTrie
+  , t1, t2, t3, t4, t5, t6, t7
 ) where
 import Data.Foldable (for_)
 import Control.Monad (when)
@@ -27,7 +28,7 @@ data Trie = EmptyTrie | Trie {
 
 instance Show Trie where
   show EmptyTrie = "EmptyTrie"
-  show (Trie v cs _) = "(" ++ show v ++ " " ++ show cs ++ ")"
+  show (Trie v cs _) = "(" ++ show v ++ " " ++ concatMap show cs ++ ")"
 
 instance Eq Trie where
   (==) EmptyTrie EmptyTrie = True
@@ -96,12 +97,22 @@ printTrie t
     for_ (children t) $ \c -> do
       printIter c ""
   | otherwise = do
-    for_ (children t) $ \c -> do
-      printIter c [value t]
+    for_ (children t) (`printIter` [value t])
   where
     printIter :: Trie -> String -> IO ()
     printIter EmptyTrie _ = return ()
     printIter t str = do
       when (isWord t) $ putStrLn $ str ++ [value t]
-      for_ (children t) $ \c -> do
-        printIter c (str ++ [value t])
+      for_ (children t) (`printIter` (str ++ [value t]))
+
+
+-- simple tests
+
+t1, t2, t3, t4, t5, t6, t7 :: Trie
+t1 = makeRootTrie "abc"
+t2 = insert "abd" t1
+t3 = insert "xyz" t2
+t4 = insert "abcde" t3
+t5 = insert "amittai" t4
+t6 = insert "joel" t5
+t7 = insert "siavava" t6
