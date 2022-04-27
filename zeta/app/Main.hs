@@ -1,7 +1,9 @@
--- {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 module Main where
 
-import qualified MyData as MDT
+import MyData        qualified as MDT
+import MyData.Parser qualified as MDT
+import MyData.Trie   qualified as Trie
 
 main :: IO ()
 main = do

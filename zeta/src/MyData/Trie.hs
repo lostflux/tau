@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+-- {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module MyData.Trie (
     Trie(..)
@@ -9,7 +9,7 @@ module MyData.Trie (
   , makeRootTrie
   , find
   , printTrie
-  , t1, t2, t3, t4, t5, t6, t7
+  , t1, t2, t3, t4, t5, t6, t7, t8, t9, t10
 ) where
 import Data.Foldable (for_)
 import Control.Monad (when)
@@ -20,6 +20,7 @@ import Control.Monad (when)
 --   isLeaf :: a -> Bool
 --   isLeaf = null children
 
+-- | A prefix tree.
 data Trie = EmptyTrie | Trie {
   value :: Char,
   children :: [Trie],
@@ -52,9 +53,9 @@ isLeaf _ = False
 
 -- | Check if a Trie is a root node.
 isRoot :: Trie -> Bool
-isRoot EmptyTrie = False
-isRoot (Trie '\0' _ _) = True
-isRoot _ = False
+isRoot EmptyTrie        = False
+isRoot (Trie '\0' _ _)  = True
+isRoot _                = False
 
 rootTrie :: Trie
 rootTrie = Trie '\0' [] False
@@ -67,16 +68,17 @@ insert str trie
   | otherwise = Trie (value trie) (iter (children trie) (tail str)) (isWord trie)
   where
     iter :: [Trie] -> String -> [Trie]
+    iter tries [] = tries
     iter [] str = [makeTrie str]
     iter [t] str
       | value t == head str = [insert str t]
       | value t < head str = [t, makeTrie str]
       | otherwise = [makeTrie str, t]
     iter tries@(t1:t2:ts) chars@(c:cs)
-      | value t1 < c && value t2 > c = t1 : makeTrie str : (t2:ts)
+      | value t1 < c && value t2 > c = t1 : makeTrie chars : (t2:ts)
       | value t1 == c = insert chars t1 : (t2:ts)
       | value t2 == c = t1 : insert chars t2 : ts
-      | otherwise = [t1,t2] ++ iter ts chars
+      | otherwise = t1 : iter (t2:ts) chars
 
 makeRootTrie :: String -> Trie
 makeRootTrie str = insert str rootTrie
@@ -93,10 +95,9 @@ find c (t:ts) = if value t == c then t else find c ts
 printTrie :: Trie -> IO ()
 printTrie EmptyTrie = return ()
 printTrie t
-  | isRoot t = do
-    for_ (children t) $ \c -> do
-      printIter c ""
+  | isRoot t = for_ (children t) (`printIter` "")
   | otherwise = do
+    when (isWord t) $ putStrLn [value t]
     for_ (children t) (`printIter` [value t])
   where
     printIter :: Trie -> String -> IO ()
@@ -108,7 +109,7 @@ printTrie t
 
 -- simple tests
 
-t1, t2, t3, t4, t5, t6, t7 :: Trie
+t1, t2, t3, t4, t5, t6, t7, t8, t9, t10 :: Trie
 t1 = makeRootTrie "abc"
 t2 = insert "abd" t1
 t3 = insert "xyz" t2
@@ -116,3 +117,6 @@ t4 = insert "abcde" t3
 t5 = insert "amittai" t4
 t6 = insert "joel" t5
 t7 = insert "siavava" t6
+t8 = insert "what" t7
+t9 = insert "is" $ insert "this" $ insert "haha" $ insert "okay" $ insert "abcdef" t8
+t10 = insert "also" t9

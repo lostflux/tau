@@ -17,3 +17,6 @@ module MyData (
 
 import MyData.Trie
 import MyData.Parser
+
+r :: String
+r = "root"
