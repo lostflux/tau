@@ -1,4 +1,6 @@
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+
 module Main where
 
 import Control.Arrow ((&&&))
@@ -18,7 +20,7 @@ debug :: Bool
 debug = True
 
 limit :: Int
-limit = maxBound
+limit = 1000
 
 main :: IO ()
 main = do
@@ -44,6 +46,7 @@ keyWords = [
     , ("artificial","intelligence")
     , ("neural","network")
     , ("thinking","machine")
+    , ("reinforcement", "learning")
     , ("ai", "")
   ]
 
@@ -56,7 +59,7 @@ crawl = do
 
 iter :: [Link] -> Links -> Int -> Trie -> IO ()
 iter queue seenURLs docID allWords = do
-  when (null queue || docID > 100) $ do
+  when (null queue || docID >= limit) $ do
     let file = "data/log/.all"
     writeFile file $ show allWords
 
@@ -72,9 +75,9 @@ iter queue seenURLs docID allWords = do
     printf "%sFetching: %s%s\n" green url reset
     page <- Parser.loadPage url
     if isValid page then do
-      let words = allWords <|> text page
-      let q = rest ++ Set.toList (links page \\ seenURLs)
-      let s = Set.insert url seenURLs
+      let !words = allWords <|> text page
+      let !q = rest ++ Set.toList (links page \\ seenURLs)
+      let !s = Set.insert url seenURLs
       -- when debug $ printf "\n\nqueue length : %d\nseen urls: %d\n\n" (length q) (Set.size seenURLs)
       if hasKeyWords page then do
         printf "%sHit  %3d: %s%s\n" blue docID url reset
@@ -96,7 +99,7 @@ hasKeyWords page =
         (Trie.lookup first trie
           && Trie.lookup second trie)
             || check others trie
-      
+
 
 logR :: Int -> Link -> WebPage -> IO ()
 logR docID url page = do

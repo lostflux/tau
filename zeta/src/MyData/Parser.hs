@@ -143,6 +143,7 @@ getLinks url doc = do
           | "itunes.apple.com" `isInfixOf` url = ""
           | "instagram.com" `isInfixOf` url = ""
           | "shutterstock.com" `isInfixOf` url = ""
+          | "github.com" `isInfixOf` url = ""
           | otherwise = url
 
         trim :: String -> String
