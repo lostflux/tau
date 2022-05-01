@@ -10,26 +10,25 @@ module MyData.Parser (
 
 import Control.Arrow                  (arr, (<+>))
 import Control.Arrow.IOStateListArrow (IOSLA)
+import Control.Exception              (try)
 import Data.ByteString.Lazy           (ByteString)
 import Data.ByteString.Lazy           qualified as ByteString
 import Data.ByteString.Lazy.UTF8      qualified as ByteString
-import Data.List                      (isPrefixOf, isSuffixOf, isInfixOf, dropWhileEnd)
+import Data.Char                      (isSpace)
+import Data.List                      (dropWhileEnd, isInfixOf, isPrefixOf,
+                                       isSuffixOf)
 import Data.Set                       (Set)
 import Data.Set                       qualified as Set
 import MyData.Trie                    (Trie (..), clean, insert, makeRootTrie)
-import Network.HTTP.Conduit           (simpleHttp, HttpException)
+import Network.HTTP.Conduit           (HttpException, simpleHttp)
 import Text.Printf                    (printf)
 import Text.XML.HXT.Arrow.XmlState    (XIOState)
 import Text.XML.HXT.Core              (ArrowTree (deep, (//>)),
-                                       ArrowXml (getAttrName, getAttrValue, getText, hasAttr, hasName, hasText, isText),
+                                       ArrowXml (getAttrValue, getText, hasName, isText),
                                        XNode (XText), XmlTree, no, readString,
                                        runX, withParseHTML, withWarnings, yes,
                                        (>>>))
 import Text.XML.HXT.DOM.XmlNode       (NTree (..))
-import Control.Exception (try, catch)
-import Control.Exception.Base (IOException)
-import Data.Char (isSpace)
--- import Network.HTTP.Client (HttpExceptionRequest)
 
 data WebPage = EmptyPage | WebPage {
     title :: String
@@ -135,7 +134,7 @@ getLinks url doc = do
 
         dropBadDomains :: String -> String
         dropBadDomains url
-          | "youtube.com" `isInfixOf` url || "youtu.be" `isInfixOf` url = "" 
+          | "youtube.com" `isInfixOf` url || "youtu.be" `isInfixOf` url = ""
           | "twitter.com" `isInfixOf` url = ""
           | "facebook.com" `isInfixOf` url = ""
           | "google.com" `isInfixOf` url = ""
@@ -144,6 +143,7 @@ getLinks url doc = do
           | "instagram.com" `isInfixOf` url = ""
           | "shutterstock.com" `isInfixOf` url = ""
           | "github.com" `isInfixOf` url = ""
+          | "tiktok.com" `isInfixOf` url = ""
           | otherwise = url
 
         trim :: String -> String

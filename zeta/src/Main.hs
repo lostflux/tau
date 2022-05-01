@@ -5,6 +5,7 @@ module Main where
 
 import Control.Arrow ((&&&))
 import Control.Monad (when)
+import Data.List     (isPrefixOf)
 import Data.Set      (Set, (\\))
 import Data.Set      qualified as Set
 import MyData.Parser (Link, Links, WebPage (..), isValid)
@@ -68,26 +69,29 @@ iter queue seenURLs docID allWords = do
     exitSuccess
 
   let (url, rest) = (head &&& tail) queue
-  if Set.member url seenURLs then do
-    printf "%sIgnDupl:  %s%s\n" yellow url reset
-    iter rest seenURLs docID allWords
+  -- if Set.member url seenURLs then do
+  --   printf "%sIgnDupl:  %s%s\n" yellow url reset
+  --   iter rest seenURLs docID allWords
+  -- else do
+  printf "%sFetch:    %s%s\n" green url reset
+  page <- Parser.loadPage url
+  if isValid page then do
+    let !words = allWords <|> text page
+    let !asList = Set.toList (links page \\ seenURLs)
+    let !s = foldr Set.insert seenURLs asList
+    let !q = rest ++ asList
+    -- when debug $ printf "\n\nqueue length : %d\nseen urls: %d\n\n" (length q) (Set.size seenURLs)
+    if hasKeyWords page then do
+      printf "%sHit  %3d: %s%s\n" blue docID url reset
+      logR docID url page
+      iter q s (docID + 1) words
+    else iter q s docID words
   else do
-    printf "%sFetching: %s%s\n" green url reset
-    page <- Parser.loadPage url
-    if isValid page then do
-      let !words = allWords <|> text page
-      let !q = rest ++ Set.toList (links page \\ seenURLs)
-      let !s = Set.insert url seenURLs
-      -- when debug $ printf "\n\nqueue length : %d\nseen urls: %d\n\n" (length q) (Set.size seenURLs)
-      if hasKeyWords page then do
-        printf "%sHit  %3d: %s%s\n" blue docID url reset
-        logR docID url page
-        iter q s (docID + 1) words
-      else iter q s docID words
-    else do
-      printf "%sIgnBad:   %s%s\n" red url reset
-      iter rest seenURLs docID allWords
+    printf "%sIgnBad:   %s%s\n" red url reset
+    let filtered = filter (not . isPrefixOf url) rest
+    iter filtered seenURLs docID allWords
 
+-- | Does the page have any of the specified set of keywords?
 hasKeyWords :: WebPage -> Bool
 hasKeyWords page =
   check keyWords $ text page
@@ -115,3 +119,4 @@ green     = "\x1b[92m"
 red       = "\x1b[31m"
 yellow    = "\x1b[93m"
 reset     = "\x1b[0m"
+
