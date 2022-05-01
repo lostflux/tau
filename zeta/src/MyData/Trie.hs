@@ -5,17 +5,20 @@ module MyData.Trie (
   , makeTrie
   , makeRootTrie
   , insert
-  , find
+  , lookup
   , toString
   , printTrie
   , repr
   , clean
+  , union, (<|>)
+  , intersection, (>|<)
   -- tests
   , t1, t2, t3, t4, t5, t6, t7, t8, t9, t10,
 ) where
 import Control.Monad (when)
-import Data.Char     (isDigit, toLower, toUpper)
+import Data.Char     (isDigit, toLower, toUpper, isAlpha)
 import Data.Foldable (for_)
+import Prelude       hiding (lookup, (<*>))
 import Text.Printf   (printf)
 
 -- class Trie a where
@@ -32,7 +35,7 @@ data Trie =
     {
         value    :: Char    -- ^ The value of the node.
       , children :: [Trie]  -- ^ The children of the node.
-      , isWord   :: Bool    -- ^ Whether the node is a terminal word.
+      , frequency :: Int
     }
 
 -- instance Monad Trie where
@@ -57,6 +60,7 @@ repr (Trie v cs _) = "(" ++ show v ++ " " ++ concatMap repr cs ++ ")"
 size :: Trie -> Int
 size EmptyTrie     = 0
 size (Trie _ cs _) = foldr (\c acc -> size c + acc) 1 cs
+
 
 instance Eq Trie where
   (==) EmptyTrie EmptyTrie               = True
@@ -86,11 +90,15 @@ isRoot EmptyTrie       = False
 isRoot (Trie '\0' _ _) = True
 isRoot _               = False
 
+isWord :: Trie -> Bool
+isWord EmptyTrie = False
+isWord trie = frequency trie > 0
+
 -- | The default root node.
 --
 -- Contains the NULL char `\\0` as its value.
 rootTrie :: Trie
-rootTrie = Trie '\0' [] False
+rootTrie = Trie '\0' [] 0
 
 -- | Insert a String into a Trie.
 --
@@ -100,23 +108,26 @@ insert :: String -> Trie -> Trie
 insert str EmptyTrie = makeRootTrie str
 insert str trie
   | null str = trie
-  | isRoot trie = Trie (value trie) (iter (children trie) str) (isWord trie)
-  | value trie /= head str = error "Incompatible word."
-  | otherwise = Trie (value trie) (iter (children trie) (tail str)) (isWord trie)
-  where
-    iter :: [Trie] -> String -> [Trie]
-    iter tries [] = tries
-    iter [] str = [makeTrie str]
-    iter [t] str
-      | value t == head str = [insert str t]
-      | value t < head str = [t, makeTrie str]
-      | otherwise = [makeTrie str, t]
-    iter tries@(t1:t2:ts) chars@(c:cs)
-      | value t1 > c = makeTrie chars : tries
-      | value t1 == c = insert chars t1 : (t2:ts)
-      | value t2 == c = t1 : insert chars t2 : ts
-      | value t1 < c && value t2 > c = t1 : makeTrie chars : (t2:ts)
-      | otherwise = t1 : iter (t2:ts) chars
+  | isRoot trie = trie { children = iter (children trie) str }
+  | value trie == head str = 
+    if null (children trie)
+      then trie { frequency = frequency trie + 1 }
+      else trie { children = iter (children trie) (tail str) }
+  | otherwise = error "Incompatible word."
+    where
+      iter :: [Trie] -> String -> [Trie]
+      iter tries [] = tries
+      iter [] str = [makeTrie str]
+      iter [t] str
+        | value t == head str = [insert str t]
+        | value t < head str = [t, makeTrie str]
+        | otherwise = [makeTrie str, t]
+      iter tries@(t1:t2:ts) chars@(c:cs)
+        | value t1 > c = makeTrie chars : tries
+        | value t1 == c = insert chars t1 : (t2:ts)
+        | value t2 == c = t1 : insert chars t2 : ts
+        | value t1 < c && value t2 > c = t1 : makeTrie chars : (t2:ts)
+        | otherwise = t1 : iter (t2:ts) chars
 
 -- | Construct a rooted Trie from a String.
 makeRootTrie :: String -> Trie
@@ -125,17 +136,84 @@ makeRootTrie str = insert str rootTrie
 -- | Construct a non-rooted Trie from a String.
 makeTrie :: String -> Trie
 makeTrie []       = EmptyTrie
-makeTrie (x:y:xs) = Trie x [makeTrie (y:xs)] False
-makeTrie [x]      = Trie x [] True
+makeTrie (x:y:xs) = Trie x [makeTrie (y:xs)] 0
+makeTrie [x]      = Trie x [] 1
 
 -- | Find a `Trie` with the given `Char` from a list of `Trie`s.
 --
 -- NOTE: This function is not tail-recursive.
 --
 -- We also don't care about the children of the `Trie`.
-find :: Char -> [Trie] -> Trie
-find c []     = EmptyTrie
-find c (t:ts) = if value t == c then t else find c ts
+lookup :: String -> Trie -> Bool
+lookup [] _ = True
+lookup _ EmptyTrie = False
+lookup str@(c:cs) trie
+  | isRoot trie = lookup str $ findTrie (children trie) str
+  | value trie == c = null cs || lookup cs (findTrie (children trie) cs)
+  | otherwise = False
+    where
+      findTrie :: [Trie] -> String -> Trie
+      findTrie _ [] = EmptyTrie
+      findTrie [] _ = EmptyTrie
+      findTrie (t:ts) str@(c:_)
+        | value t == c = t
+        | value t < c = findTrie ts str
+        | otherwise = EmptyTrie
+
+-- | Trie union (infix operator)
+--
+-- @O(n1 + n2)@
+(<|>) :: Trie -> Trie -> Trie
+(<|>) = union
+
+-- | Trie intersection (infix operator).
+--
+-- @O(min(n1, n2))@
+(>|<) :: Trie -> Trie -> Trie
+(>|<) = intersection
+
+-- | Trie union.
+--
+-- @O(n1 + n2)@
+union :: Trie -> Trie -> Trie
+union EmptyTrie t = t
+union t EmptyTrie = t
+union trie1 trie2
+  | value trie1 /= value trie2 = error "Incompatible Tries for union."
+  | otherwise = trie1 { 
+      frequency = frequency trie1 + frequency trie2
+    , children = iter (children trie1) (children trie2) 
+      }
+    where
+      iter :: [Trie] -> [Trie] -> [Trie]
+      iter [] [] = []
+      iter [] ts = ts
+      iter ts [] = ts
+      iter (t1:ts1) (t2:ts2)
+        | value t1 == value t2 = (t1 `union` t2) : iter ts1 ts2
+        | value t1 < value t2 = t1 : iter ts1 (t2:ts2)
+        | otherwise = t2 : iter (t1:ts1) ts2
+
+-- | Trie intersection.
+--
+-- @O(min(n1, n2))@
+intersection :: Trie -> Trie -> Trie
+intersection EmptyTrie t = t
+intersection t EmptyTrie = t
+intersection trie1 trie2
+  | value trie1 /= value trie2 = error "Incompatible Tries for union."
+  | otherwise = trie1 { 
+        frequency = min (frequency trie1) ( frequency trie2)
+      , children = iter (children trie1) (children trie2) 
+    }
+    where
+      iter :: [Trie] -> [Trie] -> [Trie]
+      iter [] _ = []
+      iter _ [] = []
+      iter (t1:ts1) (t2:ts2)
+        | value t1 == value t2 = (t1 `intersection` t2) : iter ts1 ts2
+        | value t1 < value t2 = iter ts1 (t2:ts2)
+        | otherwise = iter (t1:ts1) ts2
 
 -- | Print all the proper words in a `Trie`.
 --
@@ -168,7 +246,7 @@ toString t
       stringify :: Trie -> String -> String
       stringify EmptyTrie str = str
       stringify t str
-        | isWord t = printf "%s%c\n%s" str (value t) $ concatMap (`stringify` printf "%s%c" str (value t)) (children t)
+        | isWord t = printf "%5d %s%c\n%s" (frequency t) str (value t) $ concatMap (`stringify` printf "%s%c" str (value t)) (children t)
         | otherwise = concatMap (`stringify` printf "%s%c" str (value t)) (children t)
 
 loadFile :: FilePath -> IO Trie
@@ -183,11 +261,11 @@ dumpToFile t fp = writeFile fp $ show t
 ---- TEXT OPS -----
 -- | Clean up the given string by removing all non-alphabetical characters
 clean :: String -> String
-clean = lowercase . filter isalpha
+clean = lowercase . filter isAlpha
 
 -- | Check if char is puctuation
 ispunct :: Char -> Bool
-ispunct c = c `elem` "\n!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~‘“’”—…"
+ispunct c = c `elem` "\n!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~‘“’”—…©°–"
 
 -- | Check if char is space
 isspace :: Char -> Bool

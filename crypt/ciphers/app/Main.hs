@@ -3,8 +3,7 @@
 module Main where
 
 import AbstractAlgebra    qualified as Algebra
-import Control.Monad      (void)
-import Control.Monad.Cont (join)
+import Control.Monad      (join, void)
 import ShiftCipher        qualified as Shift
 import SubstitutionCipher qualified as Substitution
 import System.IO          (hFlush, stdout)

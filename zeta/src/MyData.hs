@@ -1,22 +1,33 @@
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+
+{-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module MyData (
 
-  -- * Data types
+  -- * Trie
     Trie(..)
   , isLeaf
   , isRoot
-  , insert
   , makeTrie
   , makeRootTrie
-  , find
+  , insert
+  , lookup
+  , toString
   , printTrie
-  , t1, t2, t3, t4, t5, t6, t7
+  , repr
+  , clean
 
-  -- * Re-exported from Data.Trie
-  , getHTML, tP1,
+  -- * Parser
+  , WebPage(..)
+  , Link
+  , Links
+  , loadPage
+  , isValid
 ) where
 
+import MyData.Parser (Link, Links, WebPage (..), isValid, loadPage)
 import MyData.Trie
-import MyData.Parser
 
-r :: String
-r = "root"

@@ -31,8 +31,9 @@ library MyData
     HTTP,
     hxt,
     http-conduit >= 2.3.8,
-    tagsoup >= 0.14.8,
-    utf8-string >= 1.0.2
+    utf8-string >= 1.0.2,
+    containers,
+    http-client
   other-modules: MyData.Trie, MyData.Parser
 
 executable zeta
@@ -51,8 +52,10 @@ executable zeta
     hxt,
     http-conduit >= 2.3.8,
     tagsoup >= 0.14.8,
-    utf8-string >= 1.0.2
-
+    utf8-string >= 1.0.2,
+    containers,
+    http-client
   other-modules:    MyData, MyData.Parser, MyData.Trie
   hs-source-dirs:   app, src
   default-language: Haskell2010
+  optimization: 2

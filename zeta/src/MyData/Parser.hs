@@ -1,67 +1,74 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 module MyData.Parser (
-  tP1
+    loadPage
+  , WebPage(..)
+  , Link
+  , Links
+  , isValid
 ) where
 
--- >>> :set -package utf8-string-1.0.2
--- >>> :set -package text
--- >>> :set -package tagsoup-0.14.8
--- >>> :set -package HTTP-4000.4.0
 import Control.Arrow                  (arr, (<+>))
 import Control.Arrow.IOStateListArrow (IOSLA)
-import Control.Monad                  (void, when)
 import Data.ByteString.Lazy           (ByteString)
 import Data.ByteString.Lazy           qualified as ByteString
 import Data.ByteString.Lazy.UTF8      qualified as ByteString
-import Data.List                      (isPrefixOf)
-import Data.Maybe                     (fromMaybe)
-import GHC.Data.Maybe                 (fromJust)
+import Data.List                      (isPrefixOf, isSuffixOf, isInfixOf, dropWhileEnd)
+import Data.Set                       (Set)
+import Data.Set                       qualified as Set
 import MyData.Trie                    (Trie (..), clean, insert, makeRootTrie)
-import Network.HTTP.Conduit           (simpleHttp)
-import Network.HTTP.Simple            (getResponseBody)
-import Text.HTML.TagSoup              (Tag, fromTagText, innerText, parseTags,
-                                       sections, (~/=), (~==))
+import Network.HTTP.Conduit           (simpleHttp, HttpException)
 import Text.Printf                    (printf)
 import Text.XML.HXT.Arrow.XmlState    (XIOState)
 import Text.XML.HXT.Core              (ArrowTree (deep, (//>)),
-                                       ArrowXml (getAttrValue, getText, hasName, hasText, isText, getAttrName, hasAttr),
+                                       ArrowXml (getAttrName, getAttrValue, getText, hasAttr, hasName, hasText, isText),
                                        XNode (XText), XmlTree, no, readString,
                                        runX, withParseHTML, withWarnings, yes,
                                        (>>>))
 import Text.XML.HXT.DOM.XmlNode       (NTree (..))
+import Control.Exception (try, catch)
+import Control.Exception.Base (IOException)
+import Data.Char (isSpace)
+-- import Network.HTTP.Client (HttpExceptionRequest)
 
 data WebPage = EmptyPage | WebPage {
-    text  :: Trie
+    title :: String
   , year  :: String
-  , title :: String
-  , links :: [Link]
+  , links :: Links
+  , text  :: Trie
 }
 
 instance Show WebPage where
   show EmptyPage = "EmptyPage"
-  show (WebPage t y tl l) = printf "WebPage {text = %s\n\nyear = %d\n\ntitle = %s\n\nlinks = %s}" (show t) y tl (show l)
+  show page = printf "WebPage {\ntitle = %s\n\nyear = %s\n\nlinks = %s\n\ntext = \n%s}" ttl yr lnks txt
+    where
+      ttl = title page
+      yr  = year page
+      lnks = show $ links page
+      txt = show $ text page
+
+isValid :: WebPage -> Bool
+isValid EmptyPage = False
+isValid _         = True
 
 type Link = String
+type Links = Set Link
 
 
 loadPage :: Link -> IO WebPage
 loadPage url = do
-  html <- ByteString.toString <$> simpleHttp url
-  -- putStrLn html
-  let doc = readString [withParseHTML yes, withWarnings no] html
-  txt <- getWords doc
-  ttl <- getTitle doc
-  lnks <- getLinks url doc
-  yr <- getYear doc
-  print txt
-  
-  -- printf "\n\n\n"
-
-  -- return $ WebPage txt yr ttl lnks
-  return EmptyPage
-
--- getTitle :: XmlTree -> IO String
+  raw <- try $ simpleHttp url :: IO (Either HttpException ByteString)
+  case raw of
+    Left _ -> return EmptyPage
+    Right text -> do
+      let html = ByteString.toString text
+      -- putStrLn html
+      let doc = readString [withParseHTML yes, withWarnings no] html
+      txt   <- getWords doc
+      ttl   <- getTitle doc
+      lnks  <- getLinks url doc
+      yr    <- getYear doc
+      return $ WebPage ttl yr lnks txt
 
 -- | Get the title of the page.
 --
@@ -79,40 +86,74 @@ getTitle doc = do
 getWords :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO Trie
 getWords doc = do
   text <- runX $ doc
-    //> (
-      hasName "p" 
-      <+> hasName "h1" <+> hasName "h2" 
-      <+> hasName "h3" <+> hasName "h4" 
+    //> ( hasName "p"
+      <+> hasName "h1" <+> hasName "h2"
+      <+> hasName "h3" <+> hasName "h4"
       <+> hasName "h5" <+> hasName "h6"
     ) //> deep (isText >>> getText)
     >>> arr words
-  return $ foldl (foldr (insert . clean)) EmptyTrie text
+  return $ foldl (foldr (insert . clean)) EmptyTrie $ map (filter (not . ("http" `isInfixOf`))) text
 
 
 getYear :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO String
 getYear doc = do
   yr <- runX $ doc
     //> hasName "a"
-    //> getAttrValue "article:modified_time"
+    >>> getAttrValue "article:modified_time"
     -- >>> getText
       -- //> hasAttr "last-modified"
       -- >>> getAttrValue "last-modified")
-  print yr
-  -- return $ getFirst yr
-  return ""
+  -- print yr
+  return $ getFirst yr
+
 
 
 -- | Get all the links in the page.
 --
 -- Returns a list of strings.
-getLinks :: Link -> IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO [String]
+getLinks :: Link -> IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO Links
 getLinks url doc = do
   links <- runX $ doc
     //> hasName "a"
     >>> getAttrValue "href"
-    >>> arr (\x -> if "/" `isPrefixOf` x then printf "%s%s" url x else x)
-    >>> arr (\x -> if "#" `isPrefixOf` x then printf "%s/%s" url x else x)
-  return $ filter (not . null) links
+    >>> arr dropBadDomains
+    >>> arr (\x -> if "/"     `isSuffixOf` x || "#" `isSuffixOf` x then init x else x)
+    >>> arr (\x -> if "/"     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s%s" url x else x)
+    >>> arr (\x -> if "#"     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s/%s" url x else x)
+    >>> arr (\x -> if "?"     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s%s" url x else x)
+    >>> arr (\x -> if "."     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s%s" url x else x)
+    >>> arr (\x -> if "http"  `isPrefixOf` x then x else printf "%s/%s" url x)
+    >>> arr (\x -> if "htm"   `isSuffixOf` x || "html" `isSuffixOf` x then dropEnding x else x)
+    >>> arr trim
+  return $ Set.fromList $ filter (not . null) links
+      where
+        dropEnding :: String -> String
+        dropEnding arr
+          | null arr = arr
+          | last arr == '.' = init arr
+          | otherwise = dropEnding $ init arr
+
+        dropBadDomains :: String -> String
+        dropBadDomains url
+          | "youtube.com" `isInfixOf` url || "youtu.be" `isInfixOf` url = "" 
+          | "twitter.com" `isInfixOf` url = ""
+          | "facebook.com" `isInfixOf` url = ""
+          | "google.com" `isInfixOf` url = ""
+          | "amzn.to" `isInfixOf` url = ""
+          | "itunes.apple.com" `isInfixOf` url = ""
+          | "instagram.com" `isInfixOf` url = ""
+          | "shutterstock.com" `isInfixOf` url = ""
+          | otherwise = url
+
+        trim :: String -> String
+        trim = dropWhileEnd (== '/') . iter "" . dropWhileEnd isSpace . dropWhile isSpace
+          where
+            iter acc [] = acc
+            iter acc (x:xs)
+              | isSpace x       = acc
+              | x `elem` "?#"   = acc
+              | otherwise       = iter (acc ++ [x]) xs
+
 
 
 -- tP1 = parse "https://wiki.haskell.org"
@@ -123,6 +164,8 @@ tP1 = loadPage "https://www.nytimes.com/2022/04/28/health/menthol-ban-fda.html"
 tP2 :: IO WebPage
 -- tP2 = getHTML "https://www.nytimes.com/2022/04/28/health/menthol-ban-fda.html"
 tP2 = loadPage "https://github.com/siavava"
+tP3 :: IO WebPage
+tP3 = loadPage "https://singularityhub.com/2022/04/20/gm-just-patented-a-self-driving-car-that-teaches-people-to-drive/"
 
 
 -- | Fall-back get first item of an list.
