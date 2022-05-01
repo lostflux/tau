@@ -14,17 +14,20 @@ import Control.Exception              (try)
 import Data.ByteString.Lazy           (ByteString)
 import Data.ByteString.Lazy           qualified as ByteString
 import Data.ByteString.Lazy.UTF8      qualified as ByteString
-import Data.Char                      (isSpace)
+import Data.Char                      (isSpace, isDigit)
 import Data.List                      (dropWhileEnd, isInfixOf, isPrefixOf,
                                        isSuffixOf)
 import Data.Set                       (Set)
 import Data.Set                       qualified as Set
-import MyData.Trie                    (Trie (..), clean, insert, makeRootTrie)
+import MyData.Trie                    (Trie (..), clean, insert, loadFile,
+                                       makeRootTrie, (>|<))
+import MyData.Trie                    qualified as Trie
 import Network.HTTP.Conduit           (HttpException, simpleHttp)
+import System.IO.Unsafe               (unsafePerformIO)
 import Text.Printf                    (printf)
 import Text.XML.HXT.Arrow.XmlState    (XIOState)
-import Text.XML.HXT.Core              (ArrowTree (deep, (//>)),
-                                       ArrowXml (getAttrValue, getText, hasName, isText),
+import Text.XML.HXT.Core              (ArrowTree (deep, multi, (//>)),
+                                       ArrowXml (getAttrValue, getText, hasName, isText, hasAttr, hasAttrValue),
                                        XNode (XText), XmlTree, no, readString,
                                        runX, withParseHTML, withWarnings, yes,
                                        (>>>))
@@ -53,6 +56,37 @@ isValid _         = True
 type Link = String
 type Links = Set Link
 
+targets :: [String]
+targets = [
+      "machine"
+    , "machines"
+    , "learning"
+    , "deep"
+    , "artificial"
+    , "intelligence"
+    , "neural"
+    , "network"
+    , "thinking"
+    , "reinforcement"
+    , "ai"
+    , "recommender"
+    , "system"
+    , "systems"
+    , "mind"
+    , "language"
+    , "processing"
+    , "vision"
+    , "ai"
+  ]
+
+{-# NOINLINE dictionary #-}
+dictionary :: Trie
+dictionary = do
+  let dict = unsafePerformIO $ loadFile "/workspace/tau/zeta/data/dictionary"
+  foldr Trie.insert dict targets
+
+checkDict :: String -> Bool
+checkDict word = Trie.lookup word dictionary
 
 loadPage :: Link -> IO WebPage
 loadPage url = do
@@ -67,6 +101,7 @@ loadPage url = do
       ttl   <- getTitle doc
       lnks  <- getLinks url doc
       yr    <- getYear doc
+      -- validWords <- (txt >|<) <$> dictionary
       return $ WebPage ttl yr lnks txt
 
 -- | Get the title of the page.
@@ -89,23 +124,41 @@ getWords doc = do
       <+> hasName "h1" <+> hasName "h2"
       <+> hasName "h3" <+> hasName "h4"
       <+> hasName "h5" <+> hasName "h6"
-    ) //> deep (isText >>> getText)
+    ) //> (isText >>> getText)
     >>> arr words
+    >>> arr (filter checkDict)
   return $ foldl (foldr (insert . clean)) EmptyTrie $ map (filter (not . ("http" `isInfixOf`))) text
 
 
 getYear :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO String
 getYear doc = do
-  yr <- runX $ doc
-    //> hasName "a"
-    >>> getAttrValue "article:modified_time"
-    -- >>> getText
-      -- //> hasAttr "last-modified"
-      -- >>> getAttrValue "last-modified")
-  -- print yr
-  return $ getFirst yr
+  yrs <- runX $ doc
+    //> hasName "p"
+    //> getText
+    >>> arr checkYear
+  let lastYear = dropYear "" $ filter (not . null) yrs
+  -- print yrs
+  -- print lastYear
+  return lastYear
 
+years :: [String]
+years = map show [1000..2022]
 
+checkYear :: String -> String
+checkYear str = iter $ words str
+  where
+  iter [] = ""
+  iter (w:ws)
+    | w `elem` years = w
+    | otherwise      = iter ws
+
+dropYear :: String -> [String] -> String
+dropYear _ [] = ""
+dropYear current years@(y:ys)
+  | null years = current
+  | null current = y
+  | y > current = dropYear y ys 
+  | otherwise = dropYear current ys
 
 -- | Get all the links in the page.
 --
@@ -119,7 +172,7 @@ getLinks url doc = do
     >>> arr (\x -> if "/"     `isSuffixOf` x || "#" `isSuffixOf` x then init x else x)
     >>> arr (\x -> if "/"     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s%s" url x else x)
     >>> arr (\x -> if "#"     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s/%s" url x else x)
-    >>> arr (\x -> if "?"     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s%s" url x else x)
+    -- >>> arr (\x -> if "?"     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s%s" url x else x)
     >>> arr (\x -> if "."     `isPrefixOf` x && not (x `isInfixOf` url) then printf "%s%s" url x else x)
     >>> arr (\x -> if "http"  `isPrefixOf` x then x else printf "%s/%s" url x)
     >>> arr (\x -> if "htm"   `isSuffixOf` x || "html" `isSuffixOf` x then dropEnding x else x)
@@ -134,6 +187,7 @@ getLinks url doc = do
 
         dropBadDomains :: String -> String
         dropBadDomains url
+          | "?" `isInfixOf` url = ""
           | "youtube.com" `isInfixOf` url || "youtu.be" `isInfixOf` url = ""
           | "twitter.com" `isInfixOf` url = ""
           | "facebook.com" `isInfixOf` url = ""
@@ -144,6 +198,8 @@ getLinks url doc = do
           | "shutterstock.com" `isInfixOf` url = ""
           | "github.com" `isInfixOf` url = ""
           | "tiktok.com" `isInfixOf` url = ""
+          | "linkedin.com" `isInfixOf` url = ""
+          | ".pdf" `isSuffixOf` url = ""
           | otherwise = url
 
         trim :: String -> String
@@ -152,7 +208,7 @@ getLinks url doc = do
             iter acc [] = acc
             iter acc (x:xs)
               | isSpace x       = acc
-              | x `elem` "?#"   = acc
+              | x == '#'   = acc
               | otherwise       = iter (acc ++ [x]) xs
 
 

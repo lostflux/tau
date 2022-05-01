@@ -10,6 +10,7 @@ module MyData.Trie (
   , printTrie
   , repr
   , clean
+  , loadFile
   , union, (<|>)
   , intersection, (>|<)
   -- tests
@@ -252,7 +253,7 @@ toString t
 loadFile :: FilePath -> IO Trie
 loadFile fp = do
   text <- readFile fp
-  return $ foldr (insert . clean) EmptyTrie (words text)
+  return $ foldr insert EmptyTrie $ filter (not . null) . map clean $ words text
 
 dumpToFile :: Trie -> FilePath -> IO ()
 dumpToFile t fp = writeFile fp $ show t

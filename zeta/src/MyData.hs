@@ -19,6 +19,7 @@ module MyData (
   , printTrie
   , repr
   , clean
+  , loadFile
 
   -- * Parser
   , WebPage(..)

@@ -21,7 +21,7 @@ debug :: Bool
 debug = True
 
 limit :: Int
-limit = 1000
+limit = 2000
 
 main :: IO ()
 main = do
@@ -33,11 +33,34 @@ main = do
 seedURLs :: [Link]
 seedURLs = [
   -- "https://github.com/siavava"
-    "https://www.deepmind.com"
-  , "https://www.technologyreview.com"
+    "https://www.technologyreview.com"
+  , "https://www.deepmind.com"
   , "https://singularityhub.com"
   , "https://www.wired.com"
     -- "https://singularityhub.com/2022/04/20/gm-just-patented-a-self-driving-car-that-teaches-people-to-drive"
+  ]
+
+targets :: [String]
+targets = [
+      "machine"
+    , "machines"
+    , "learning"
+    , "deep"
+    , "artificial"
+    , "intelligence"
+    , "neural"
+    , "network"
+    , "thinking"
+    , "reinforcement"
+    , "ai"
+    , "recommender"
+    , "system"
+    , "systems"
+    , "mind"
+    , "language"
+    , "processing"
+    , "vision"
+    , "ai"
   ]
 
 keyWords :: [(String, String)]
@@ -56,13 +79,15 @@ crawl = do
   let docID = 0
   let allWords = EmptyTrie
   let seenURLs = Set.empty
-  iter seedURLs seenURLs docID allWords
+  let allLinks = []
+  iter seedURLs seenURLs docID allWords allLinks
 
-iter :: [Link] -> Links -> Int -> Trie -> IO ()
-iter queue seenURLs docID allWords = do
+iter :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
+iter queue seenURLs docID allWords allLinks = do
   when (null queue || docID >= limit) $ do
-    let file = "data/log/.all"
-    writeFile file $ show allWords
+    let dir = "data/log/"
+    writeFile (printf "%s/.all" dir) $ show allWords
+    writeFile (printf "%s/.urls" dir) $ unlines allLinks
 
     printf "Seen %d unique URLs.\n" (Set.size seenURLs + length queue)
     printf "THE END"
@@ -80,35 +105,42 @@ iter queue seenURLs docID allWords = do
     let !asList = Set.toList (links page \\ seenURLs)
     let !s = foldr Set.insert seenURLs asList
     let !q = rest ++ asList
-    -- when debug $ printf "\n\nqueue length : %d\nseen urls: %d\n\n" (length q) (Set.size seenURLs)
+    -- when debug $ printf "\n\t\tqueue length : %d\n\t\tseen urls: %d\n\n" (length q) (Set.size seenURLs)
     if hasKeyWords page then do
       printf "%sHit  %3d: %s%s\n" blue docID url reset
       logR docID url page
-      iter q s (docID + 1) words
-    else iter q s docID words
+      iter q s (docID + 1) words (allLinks ++ [url])
+    else iter q s docID words allLinks
   else do
     printf "%sIgnBad:   %s%s\n" red url reset
     let filtered = filter (not . isPrefixOf url) rest
-    iter filtered seenURLs docID allWords
+    iter filtered seenURLs docID allWords allLinks
+
+advance :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
+advance q s docID words allLinks
+  | length q > limit = iter (drop (length q - (limit `div` 2)) q) s docID words allLinks
+  | otherwise = iter q s docID words allLinks
 
 -- | Does the page have any of the specified set of keywords?
 hasKeyWords :: WebPage -> Bool
 hasKeyWords page =
-  check keyWords $ text page
+  check targets $ text page
     where
-      check :: [(String, String)] -> Trie -> Bool
-      check [] _        = False
+      check :: [String] -> Trie -> Bool
+      check [] _        = True
       check _ EmptyTrie = False
-      check (pair@(first, second) : others) trie =
-        (Trie.lookup first trie
-          && Trie.lookup second trie)
-            || check others trie
+      check words trie = count >= 2
+        where
+          count = foldr (\x acc -> if Trie.lookup x trie then acc + 1 else acc) 0 words
 
 
 logR :: Int -> Link -> WebPage -> IO ()
 logR docID url page = do
   let file = printf "data/log/%d" docID
-  writeFile file $ printf "%s\n%s\n" url $ show (text page)
+  writeFile file $ printf "%s\n%s\n%s\n\n%s\n" ttl yr url $ show (text page)
+    where
+      ttl = title page
+      yr  = year page
 
 --- colors
 type Color = String
