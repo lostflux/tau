@@ -57,8 +57,8 @@ crawl = do
   let allWords = EmptyTrie
   let seenURLs = Set.empty
   let allLinks = []
-  let prevPages = unsafePerformIO $ readFile "data.backup/metadata/urls"
-  let urls = lines prevPages ++ seedURLs
+  prevPages <- lines <$> readFile "data.backup/metadata/urls"
+  let urls = prevPages ++ seedURLs
   iter urls seenURLs docID allWords allLinks
 
 iter :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
