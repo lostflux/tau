@@ -6,6 +6,7 @@ module MyData.Parser (
   , Link
   , Links
   , isValid
+  , targets
 ) where
 
 import Control.Arrow                  (arr, (<+>))
@@ -56,6 +57,9 @@ isValid _         = True
 type Link = String
 type Links = Set Link
 
+-- | Keywords to search for.
+--
+-- Add keywords here.
 targets :: [String]
 targets = [
       "machine"
@@ -79,10 +83,11 @@ targets = [
     , "ai"
   ]
 
+
 {-# NOINLINE dictionary #-}
 dictionary :: Trie
 dictionary = do
-  let dict = unsafePerformIO $ loadFile "/workspace/tau/zeta/data/dictionary"
+  let dict = unsafePerformIO $ loadFile "data/metadata/dictionary"
   foldr Trie.insert dict targets
 
 checkDict :: String -> Bool
