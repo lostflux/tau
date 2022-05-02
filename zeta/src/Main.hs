@@ -37,9 +37,22 @@ seedURLs = [
   , "https://www.deepmind.com"
   , "https://singularityhub.com"
   , "https://www.wired.com"
+  , "https://www.vox.com"
+  , "https://www.theverge.com"
+  , "https://www.theguardian.com"
+  , "https://www.theatlantic.com"
+  , "https://www.washingtonpost.com"
+  , "https://www.techcrunch.com"
     -- "https://singularityhub.com/2022/04/20/gm-just-patented-a-self-driving-car-that-teaches-people-to-drive"
   ]
 
+-- | The number of matches we need to approve a page.
+matchCount :: Int
+matchCount = 2
+
+-- | Keywords to search for.
+--
+-- Add keywords here.
 targets :: [String]
 targets = [
       "machine"
@@ -63,17 +76,6 @@ targets = [
     , "ai"
   ]
 
-keyWords :: [(String, String)]
-keyWords = [
-      ("machine","learning")
-    , ("deep","learning")
-    , ("artificial","intelligence")
-    , ("neural","network")
-    , ("thinking","machine")
-    , ("reinforcement", "learning")
-    , ("ai", "")
-  ]
-
 crawl :: IO ()
 crawl = do
   let docID = 0
@@ -86,8 +88,8 @@ iter :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
 iter queue seenURLs docID allWords allLinks = do
   when (null queue || docID >= limit) $ do
     let dir = "data/log/"
-    writeFile (printf "%s/.all" dir) $ show allWords
-    writeFile (printf "%s/.urls" dir) $ unlines allLinks
+    writeFile (printf "%s/metadata/all" dir) $ show allWords
+    writeFile (printf "%s/metadata/urls" dir) $ unlines allLinks
 
     printf "Seen %d unique URLs.\n" (Set.size seenURLs + length queue)
     printf "THE END"
@@ -129,7 +131,7 @@ hasKeyWords page =
       check :: [String] -> Trie -> Bool
       check [] _        = True
       check _ EmptyTrie = False
-      check words trie = count >= 2
+      check words trie = count >= matchCount
         where
           count = foldr (\x acc -> if Trie.lookup x trie then acc + 1 else acc) 0 words
 

@@ -14,7 +14,7 @@ import Control.Exception              (try)
 import Data.ByteString.Lazy           (ByteString)
 import Data.ByteString.Lazy           qualified as ByteString
 import Data.ByteString.Lazy.UTF8      qualified as ByteString
-import Data.Char                      (isSpace, isDigit)
+import Data.Char                      (isDigit, isSpace)
 import Data.List                      (dropWhileEnd, isInfixOf, isPrefixOf,
                                        isSuffixOf)
 import Data.Set                       (Set)
@@ -27,7 +27,7 @@ import System.IO.Unsafe               (unsafePerformIO)
 import Text.Printf                    (printf)
 import Text.XML.HXT.Arrow.XmlState    (XIOState)
 import Text.XML.HXT.Core              (ArrowTree (deep, multi, (//>)),
-                                       ArrowXml (getAttrValue, getText, hasName, isText, hasAttr, hasAttrValue),
+                                       ArrowXml (getAttrValue, getText, hasAttr, hasAttrValue, hasName, isText),
                                        XNode (XText), XmlTree, no, readString,
                                        runX, withParseHTML, withWarnings, yes,
                                        (>>>))
@@ -124,11 +124,12 @@ getWords doc = do
       <+> hasName "h1" <+> hasName "h2"
       <+> hasName "h3" <+> hasName "h4"
       <+> hasName "h5" <+> hasName "h6"
+      <+> hasName "li" <+> hasName "span"
     ) //> (isText >>> getText)
     >>> arr words
     >>> arr (filter checkDict)
-  return $ foldl (foldr (insert . clean)) EmptyTrie $ map (filter (not . ("http" `isInfixOf`))) text
-
+  return $ foldl (foldr (insert . clean)) EmptyTrie $ map (filter (\x -> not ("author" `isInfixOf` x || "http" `isInfixOf` x))) text
+  -- ! review the change here!! How does it affect functionality?
 
 getYear :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO String
 getYear doc = do
@@ -157,7 +158,7 @@ dropYear _ [] = ""
 dropYear current years@(y:ys)
   | null years = current
   | null current = y
-  | y > current = dropYear y ys 
+  | y > current = dropYear y ys
   | otherwise = dropYear current ys
 
 -- | Get all the links in the page.
@@ -199,6 +200,7 @@ getLinks url doc = do
           | "github.com" `isInfixOf` url = ""
           | "tiktok.com" `isInfixOf` url = ""
           | "linkedin.com" `isInfixOf` url = ""
+          | "snapchat.com" `isInfixOf` url = ""
           | ".pdf" `isSuffixOf` url = ""
           | otherwise = url
 
