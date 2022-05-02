@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+  Simple script to generate metadata about corpus.
+"""
+
+__author__  = "Amittai Siavava"
+__version__ = "0.0.1"
 
 def count_words():
   """
@@ -42,8 +50,6 @@ def index_pages():
       except:
         break
   print("Done.")
-
-
 
 if __name__ == "__main__":
   count_words()

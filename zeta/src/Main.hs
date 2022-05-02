@@ -87,7 +87,7 @@ crawl = do
 iter :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
 iter queue seenURLs docID allWords allLinks = do
   when (null queue || docID >= limit) $ do
-    let dir = "data/log/"
+    let dir = "data"
     writeFile (printf "%s/metadata/all" dir) $ show allWords
     writeFile (printf "%s/metadata/urls" dir) $ unlines allLinks
 
