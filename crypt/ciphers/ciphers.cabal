@@ -25,13 +25,20 @@ library Ciphers
     Ciphers.SubstitutionCipher
     Ciphers.AbstractAlgebra
   hs-source-dirs:      src
-  build-depends:       base >=4.16.0.0
+  build-depends:       base >=4.16.0.0, random
   default-language:    Haskell2010
 
 
 executable ciphers
   main-is:             Main.hs
-  other-modules:       Ciphers
+  other-modules:       
+    Ciphers
+    Ciphers.Common
+    Ciphers.ShiftCipher
+    Ciphers.VigenereCipher
+    Ciphers.RSA
+    Ciphers.SubstitutionCipher
+    Ciphers.AbstractAlgebra
   build-depends:       base >=4.16.0.0
   hs-source-dirs:      app, src
   default-language:    Haskell2010

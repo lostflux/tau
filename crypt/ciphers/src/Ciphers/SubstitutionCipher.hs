@@ -4,7 +4,8 @@
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 -- {-# HLINT ignore "[]" #-}
 
 module Ciphers.SubstitutionCipher (
@@ -22,13 +23,13 @@ module Ciphers.SubstitutionCipher (
   , problem
 ) where
 
-import Ciphers.Common        (dropLines)
-import Data.Foldable (for_)
-import Data.List     (group, sort, sortBy)
-import Data.Maybe    (fromMaybe)
-import GHC.IO.Handle (hFlush)
-import Prelude
-import System.IO     (stdout)
+import Ciphers.Common (dropLines)
+import Data.Foldable  (for_)
+import Data.List      (group, sort, sortBy)
+import Data.Maybe     (fromMaybe)
+import GHC.IO.Handle  (hFlush)
+import Prelude hiding ()
+import System.IO      (stdout)
 
 -- | Record of an item and a recorded frequency.
 data Freq a = Freq { item :: a, freq :: Double }

@@ -15,11 +15,11 @@ module Ciphers.VigenereCipher (
   , process
 ) where
 
-import Ciphers.Common        (clean, invWord, lowercase, splitT, toInt, uppercase)
-import Data.Foldable (for_, maximumBy)
-import Data.List     (elemIndices, groupBy, sort)
-import Prelude       hiding (repeat)
-import Ciphers.ShiftCipher   (shiftChar)
+import Ciphers.Common      (clean, invWord, lowercase, splitT, toInt, uppercase)
+import Ciphers.ShiftCipher (shiftChar)
+import Data.Foldable       (maximumBy)
+import Data.List           (elemIndices, groupBy, sort)
+import Prelude             hiding (repeat)
 
 -- | Encrypts a plaintext using a key, per the vigenère cipher.
 -- encrypt = undefined
@@ -123,18 +123,18 @@ recurrence strings = rmdups $ iter strings 0 []
         where
           allIndices = elemIndices str strs
 
-run :: Int -> IO ()
-run n = putStrLn . (tabulate . recurrence . ngrams n) =<< getStr
+-- run :: Int -> IO ()
+-- run n = putStrLn . (tabulate . recurrence . ngrams n) =<< getStr
 
-decrypt' :: IO ()
-decrypt' = putStrLn . lowercase <$> (`decrypt` "england") =<< getStr
+-- decrypt' :: IO ()
+-- decrypt' = putStrLn . lowercase <$> (`decrypt` "england") =<< getStr
 
 
-matrix :: IO [String]
-matrix = do
-  text <- getStr
-  let text' = clean . lowercase $ text
-  let m = splitT 7 text'
-  for_ m $ \x -> do
-    putStrLn x
-  return m
+-- matrix :: IO [String]
+-- matrix = do
+--   text <- getStr
+--   let text' = clean . lowercase $ text
+--   let m = splitT 7 text'
+--   for_ m $ \x -> do
+--     putStrLn x
+--   return m

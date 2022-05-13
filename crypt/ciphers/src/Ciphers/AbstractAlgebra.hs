@@ -3,6 +3,9 @@
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# OPTIONS -Wall -fwarn-tabs #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Ciphers.AbstractAlgebra (
     addN
@@ -15,10 +18,23 @@ module Ciphers.AbstractAlgebra (
   , prompt
   , run
   , extendedEuclidean
+  , factorize
+  , factors
+  , factors'
+  , primeFactors
+  , randomInt
+  , pollard
+  , pollard'
   )
 where
 
-import Prelude hiding (gcd)
+
+import Prelude                hiding (gcd)
+import System.IO.Unsafe       (unsafePerformIO)
+import System.Random.Stateful (Random (random), getStdGen, setStdGen)
+import Text.Printf (printf)
+import Control.Monad (void)
+
 
 -- | Compute multiplication modulo N.
 --
@@ -109,3 +125,58 @@ run action base a b = case action of
     print tu
     return $ (\(a, _, _) -> a) tu
   _ -> return 0
+
+factorize :: Integer -> [(Integer, Integer)]
+factorize n = [(i, n `div` i) | i <- [2.. rootN], n `mod` i == 0]
+  where
+    rootN :: Integer
+    rootN = fromIntegral $ (+ 1) . floor . sqrt . fromIntegral $ n
+
+factors :: Integer -> [Integer]
+factors n = factorize n >>= \(i, _) -> [i]
+
+factors' :: Integer -> [Integer]
+factors' n = reverse $ factorize n >>= \(_, j) -> [j]
+
+primeFactors :: Integer -> [Integer]
+primeFactors n = sieve [] $ factors n
+  where
+    sieve acc []     = acc
+    sieve acc (x:xs) = sieve (acc ++ [x]) [i | i <- xs, i `mod` x /= 0 ]
+
+pollard :: Integer -> (Integer, Integer)
+pollard n = iter n 2 1
+  where
+    iter n x i
+      | g /= 1 && g /= n    = (g, n `div` g)
+      | g == n              = iter n (randomInt 2 n) 1
+      | otherwise           = iter n ((x ^ i) `mod` n) (i + 1)
+        where
+          g = gcd (x - 1) n
+
+pollard' :: Integer -> IO (Integer, Integer)
+pollard' n = iter n 2 1
+  where
+    iter :: Integer -> Integer -> Integer -> IO (Integer, Integer)
+    iter n x i = do
+      let g = gcd (x - 1) n
+      void $ printf "n = %5d\ti = %5d\ta_i = %5d\tgcd = %5d\n" n i x g
+      if g /= 1 && g /= n
+        then return (g, n `div` g)
+        else if g == n
+          then iter n (randomInt 2 n) 1
+          else iter n ((x ^ i) `mod` n) (i + 1)
+
+
+randomInt :: Integer -> Integer -> Integer
+randomInt lo hi = unsafePerformIO $ do
+  !num <- randomN
+  return $! lo + toInteger num `mod` (hi - lo + 1)
+
+randomN :: IO Int
+{-# NOINLINE randomN #-}
+randomN = do
+  gen <- getStdGen
+  let (num, newGen) = random gen
+  setStdGen newGen
+  return num
