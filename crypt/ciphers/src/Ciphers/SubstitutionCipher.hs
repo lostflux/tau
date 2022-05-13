@@ -7,7 +7,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- {-# HLINT ignore "[]" #-}
 
-module SubstitutionCipher (
+module Ciphers.SubstitutionCipher (
     encrypt
   , decrypt
   , frequencies
@@ -22,7 +22,7 @@ module SubstitutionCipher (
   , problem
 ) where
 
-import Common        (dropLines)
+import Ciphers.Common        (dropLines)
 import Data.Foldable (for_)
 import Data.List     (group, sort, sortBy)
 import Data.Maybe    (fromMaybe)

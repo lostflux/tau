@@ -1,4 +1,5 @@
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE BangPatterns #-}
 
 module MyData.Parser (
     loadPage
@@ -17,7 +18,7 @@ import Data.ByteString.Lazy           qualified as ByteString
 import Data.ByteString.Lazy.UTF8      qualified as ByteString
 import Data.Char                      (isDigit, isSpace)
 import Data.List                      (dropWhileEnd, isInfixOf, isPrefixOf,
-                                       isSuffixOf)
+                                       isSuffixOf, foldl')
 import Data.Set                       (Set)
 import Data.Set                       qualified as Set
 import MyData.Trie                    (Trie (..), clean, insert, loadFile,
@@ -39,6 +40,7 @@ data WebPage = EmptyPage | WebPage {
   , year  :: String
   , links :: Links
   , text  :: Trie
+  , raw   :: String
 }
 
 instance Show WebPage where
@@ -47,8 +49,8 @@ instance Show WebPage where
     where
       ttl = title page
       yr  = year page
-      lnks = show $ links page
-      txt = show $ text page
+      lnks = show $! links page
+      txt = show $! text page
 
 isValid :: WebPage -> Bool
 isValid EmptyPage = False
@@ -86,63 +88,65 @@ targets = [
 
 {-# NOINLINE dictionary #-}
 dictionary :: Trie
-dictionary = do
-  let dict = unsafePerformIO $ loadFile "data/metadata/dictionary"
-  foldr Trie.insert dict targets
+dictionary =
+  let !dict = unsafePerformIO $! loadFile "data/metadata/dictionary"
+  in foldl' (flip Trie.insert) dict targets
 
 checkDict :: String -> Bool
 checkDict word = Trie.lookup word dictionary
 
 loadPage :: Link -> IO WebPage
 loadPage url = do
-  raw <- try $ simpleHttp url :: IO (Either HttpException ByteString)
+  !raw <- try $! simpleHttp url :: IO (Either HttpException ByteString)
   case raw of
-    Left _ -> return EmptyPage
+    Left _     -> return EmptyPage
     Right text -> do
-      let html = ByteString.toString text
-      -- putStrLn html
-      let doc = readString [withParseHTML yes, withWarnings no] html
-      txt   <- getWords doc
-      ttl   <- getTitle doc
-      lnks  <- getLinks url doc
-      yr    <- getYear doc
+      let !html = ByteString.toString text
+      let !doc = readString [withParseHTML yes, withWarnings no] html
+      (txt, raw) <- getWords doc
+      !ttl   <- getTitle doc
+      !lnks  <- getLinks url doc
+      !yr    <- getYear doc
       -- validWords <- (txt >|<) <$> dictionary
-      return $ WebPage ttl yr lnks txt
+      return $! WebPage ttl yr lnks txt raw
 
 -- | Get the title of the page.
 --
 -- Returns an empty string if the title is not found.
 getTitle :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO String
 getTitle doc = do
-  ttl <- runX $ doc
+  ttl <- runX $! doc
     //> hasName "title"
     //> deep (isText >>> getText)
-  return $ getFirst ttl
+  return $! getFirst ttl
 
 -- | Get all the words in a webpage.
 --
 -- Returns a Trie.
-getWords :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO Trie
+getWords :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO (Trie, String)
 getWords doc = do
-  text <- runX $ doc
+  text <- runX $! doc
     //> ( hasName "p"
       <+> hasName "h1" <+> hasName "h2"
       <+> hasName "h3" <+> hasName "h4"
       <+> hasName "h5" <+> hasName "h6"
-      <+> hasName "li" <+> hasName "span"
+      -- <+> hasName "li" <+> hasName "span"
     ) //> (isText >>> getText)
     >>> arr words
-    >>> arr (filter checkDict)
-  return $ foldl (foldr (insert . clean)) EmptyTrie $ map (filter (\x -> not ("author" `isInfixOf` x || "http" `isInfixOf` x))) text
+    -- >>> arr (filter checkDict)
+  let !trie = foldl' (foldr insert) EmptyTrie $!
+        map (filter (\x -> checkDict x && not ("author" `isInfixOf` x || "http" `isInfixOf` x)) . map clean) text
+  let !raw = unlines $! map unwords text
+  return (trie, raw)
   -- ! review the change here!! How does it affect functionality?
 
 getYear :: IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO String
 getYear doc = do
-  yrs <- runX $ doc
+  yrs <- runX $! doc
     //> hasName "p"
     //> getText
     >>> arr checkYear
-  let lastYear = dropYear "" $ filter (not . null) yrs
+  let !lastYear = dropYear "" $! filter (not . null) yrs
   -- print yrs
   -- print lastYear
   return lastYear
@@ -151,7 +155,7 @@ years :: [String]
 years = map show [1000..2022]
 
 checkYear :: String -> String
-checkYear str = iter $ words str
+checkYear str = iter $! words str
   where
   iter [] = ""
   iter (w:ws)
@@ -171,7 +175,7 @@ dropYear current years@(y:ys)
 -- Returns a list of strings.
 getLinks :: Link -> IOSLA (XIOState ()) XmlTree (NTree XNode) -> IO Links
 getLinks url doc = do
-  links <- runX $ doc
+  !links <- runX $! doc
     //> hasName "a"
     >>> getAttrValue "href"
     >>> arr dropBadDomains
@@ -183,13 +187,13 @@ getLinks url doc = do
     >>> arr (\x -> if "http"  `isPrefixOf` x then x else printf "%s/%s" url x)
     >>> arr (\x -> if "htm"   `isSuffixOf` x || "html" `isSuffixOf` x then dropEnding x else x)
     >>> arr trim
-  return $ Set.fromList $ filter (not . null) links
+  return $! Set.fromList $! filter (not . null) links
       where
         dropEnding :: String -> String
         dropEnding arr
           | null arr = arr
           | last arr == '.' = init arr
-          | otherwise = dropEnding $ init arr
+          | otherwise = dropEnding $! init arr
 
         dropBadDomains :: String -> String
         dropBadDomains url
@@ -207,6 +211,7 @@ getLinks url doc = do
           | "linkedin.com" `isInfixOf` url = ""
           | "snapchat.com" `isInfixOf` url = ""
           | ".pdf" `isSuffixOf` url = ""
+          | ".zip" `isSuffixOf` url = ""
           | otherwise = url
 
         trim :: String -> String

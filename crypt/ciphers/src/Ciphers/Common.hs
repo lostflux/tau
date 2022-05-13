@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 -- | This module implements common functionalities for Text
-module Common (
+module Ciphers.Common (
     clean
   , toInt
   , charToInt

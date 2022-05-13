@@ -7,7 +7,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module VigenereCipher (
+module Ciphers.VigenereCipher (
     encrypt
   , decrypt
   , decryptShift
@@ -15,12 +15,11 @@ module VigenereCipher (
   , process
 ) where
 
-import Common        (clean, invWord, lowercase, splitT, toInt, uppercase, splitT)
-import Data.Foldable (maximumBy, for_)
+import Ciphers.Common        (clean, invWord, lowercase, splitT, toInt, uppercase)
+import Data.Foldable (for_, maximumBy)
 import Data.List     (elemIndices, groupBy, sort)
 import Prelude       hiding (repeat)
-import ShiftCipher   (shiftChar)
-import SubstitutionCipher (frequencies, Freq )
+import Ciphers.ShiftCipher   (shiftChar)
 
 -- | Encrypts a plaintext using a key, per the vigenère cipher.
 -- encrypt = undefined

@@ -1,20 +1,20 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
-{-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -fwarn-tabs #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module AbstractAlgebra
-  ( addN,
-    mulN,
-    subN,
-    divN,
-    invN,
-    gcd,
-    gcdL,
-    prompt,
-    run,
-    extendedEuclidean
+module Ciphers.AbstractAlgebra (
+    addN
+  , mulN
+  , subN
+  , divN
+  , invN
+  , gcd
+  , gcdL
+  , prompt
+  , run
+  , extendedEuclidean
   )
 where
 
@@ -56,9 +56,9 @@ extendedEuclidean :: Integral b => b -> b -> (b, b, b)
 extendedEuclidean 0 y = (y, 0, 1)
 extendedEuclidean x y =
   let (gcd, x', y') = extendedEuclidean (y `mod` x) x
-      x = y' - (y `div` x) * x'
-      y = x'
-  in (gcd, x, y)
+      x'' = y' - (y `div` x) * x'
+      y'' = x'
+  in (gcd, x'', y'')
 
 euclideanA :: Integral a => a -> a -> a
 euclideanA a 0 = a

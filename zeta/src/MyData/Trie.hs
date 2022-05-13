@@ -16,26 +16,24 @@ module MyData.Trie (
   -- tests
   , t1, t2, t3, t4, t5, t6, t7, t8, t9, t10,
 ) where
-import Control.Monad (when)
-import Data.Char     (isDigit, toLower, toUpper, isAlpha)
-import Data.Foldable (for_)
-import Prelude       hiding (lookup, (<*>))
-import Text.Printf   (printf)
 
--- class Trie a where
---   value :: Maybe a
---   children :: a -> [a]
---   isLeaf :: a -> Bool
---   isLeaf = null children
-
+import Control.DeepSeq  (deepseq)
+import Control.Monad    (join, unless, when)
+import Data.Char        (isAlpha, isDigit, toLower, toUpper)
+import Data.List        (foldl')
+import Prelude          hiding (lookup, (<*>))
+import System.IO        (Handle, IOMode (ReadMode), hFlush, hGetLine, hIsEOF,
+                         openFile, stdout)
+import System.IO.Unsafe (unsafePerformIO)
+import Text.Printf      (printf)
 
 -- | A prefix tree.
 data Trie =
   EmptyTrie -- ^ Empty trie.
   | Trie    -- ^ Non-empty trie.
     {
-        value    :: Char    -- ^ The value of the node.
-      , children :: [Trie]  -- ^ The children of the node.
+        value     :: Char    -- ^ The value of the node.
+      , children  :: [Trie]  -- ^ The children of the node.
       , frequency :: Int
     }
 
@@ -93,7 +91,7 @@ isRoot _               = False
 
 isWord :: Trie -> Bool
 isWord EmptyTrie = False
-isWord trie = frequency trie > 0
+isWord trie      = frequency trie > 0
 
 -- | The default root node.
 --
@@ -110,7 +108,7 @@ insert str EmptyTrie = makeRootTrie str
 insert str trie
   | null str = trie
   | isRoot trie = trie { children = iter (children trie) str }
-  | value trie == head str = 
+  | value trie == head str =
     if null (children trie)
       then trie { frequency = frequency trie + 1 }
       else trie { children = iter (children trie) (tail str) }
@@ -149,7 +147,7 @@ lookup :: String -> Trie -> Bool
 lookup [] _ = True
 lookup _ EmptyTrie = False
 lookup str@(c:cs) trie
-  | isRoot trie = lookup str $ findTrie (children trie) str
+  | isRoot trie = lookup str $! findTrie (children trie) str
   | value trie == c = null cs || lookup cs (findTrie (children trie) cs)
   | otherwise = False
     where
@@ -181,9 +179,9 @@ union EmptyTrie t = t
 union t EmptyTrie = t
 union trie1 trie2
   | value trie1 /= value trie2 = error "Incompatible Tries for union."
-  | otherwise = trie1 { 
+  | otherwise = trie1 {
       frequency = frequency trie1 + frequency trie2
-    , children = iter (children trie1) (children trie2) 
+    , children = iter (children trie1) (children trie2)
       }
     where
       iter :: [Trie] -> [Trie] -> [Trie]
@@ -203,9 +201,9 @@ intersection EmptyTrie t = t
 intersection t EmptyTrie = t
 intersection trie1 trie2
   | value trie1 /= value trie2 = error "Incompatible Tries for union."
-  | otherwise = trie1 { 
+  | otherwise = trie1 {
         frequency = min (frequency trie1) ( frequency trie2)
-      , children = iter (children trie1) (children trie2) 
+      , children = iter (children trie1) (children trie2)
     }
     where
       iter :: [Trie] -> [Trie] -> [Trie]
@@ -222,7 +220,7 @@ intersection trie1 trie2
 --
 -- This function generates a sorted arrangement of the words in the Trie.
 printTrie :: Trie -> IO ()
-printTrie trie = putStr $ toString trie
+printTrie trie = putStr $! toString trie
 
 -- | OLD: Print all the proper words in a `Trie`.
 trieToStr' :: Trie -> String
@@ -247,16 +245,16 @@ toString t
       stringify :: Trie -> String -> String
       stringify EmptyTrie str = str
       stringify t str
-        | isWord t = printf "%5d %s%c\n%s" (frequency t) str (value t) $ concatMap (`stringify` printf "%s%c" str (value t)) (children t)
+        | isWord t = printf "%5d %s%c\n%s" (frequency t) str (value t) $! concatMap (`stringify` printf "%s%c" str (value t)) (children t)
         | otherwise = concatMap (`stringify` printf "%s%c" str (value t)) (children t)
 
 loadFile :: FilePath -> IO Trie
 loadFile fp = do
   text <- readFile fp
-  return $ foldr insert EmptyTrie $ filter (not . null) . map clean $ words text
+  return $! foldr insert EmptyTrie $! filter (not . null) . map clean $! words text
 
 dumpToFile :: Trie -> FilePath -> IO ()
-dumpToFile t fp = writeFile fp $ show t
+dumpToFile t fp = writeFile fp $! show t
 
 
 ---- TEXT OPS -----
@@ -274,7 +272,7 @@ isspace c = c `elem` " \t\r\f\v"
 
 -- | Check if char is alphabetical, i.e. neither punct nor space
 isalpha :: Char -> Bool
-isalpha c = not $ isspace c || ispunct c || isDigit c
+isalpha c = not $! isspace c || ispunct c || isDigit c
 
 lowercase, uppercase :: String -> String
 -- | Convert string to lowercase
@@ -289,7 +287,7 @@ uppercase = map toUpper
 -- simple tests
 
 writeToFile :: FilePath -> Trie -> IO ()
-writeToFile fp trie = writeFile fp $ toString trie
+writeToFile fp trie = writeFile fp $! toString trie
 
 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10 :: Trie
 t1 = makeRootTrie "abc"
@@ -303,9 +301,9 @@ t8 = insert "what" t7
 t9 = insert "is" $ insert "this" $ insert "haha" $ insert "okay" $ insert "abcdef" t8
 t10 = insert "also" t9
 
-t11 :: IO Trie
-t11 = loadFile "../../data/simpletext"
+-- t11 :: IO Trie
+-- t11 = loadFile "../../data/simpletext"
 
-t12 :: IO Trie
-t12 = loadFile "../../data/en"
+t11 :: IO Trie
+t11 = loadFile "../../data/metadata/dictionary"
 

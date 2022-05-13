@@ -1,22 +1,22 @@
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Main where
 
-import Data.Text ( isInfixOf, pack, strip, isPrefixOf, unpack, Text )
-import System.Environment( getArgs )
-import GHC.IO.Handle.FD ( stdout )
-import GHC.IO.Handle ( hFlush )
-import Control.Monad ( void )
-import System.IO ( isEOF )
-import Data.Char (isAlpha, toLower)
+import Control.Monad      (void)
+import Data.Char          (isAlpha, toLower)
+import Data.Text          (Text, isInfixOf, isPrefixOf, pack, strip, unpack)
+import GHC.IO.Handle      (hFlush)
+import GHC.IO.Handle.FD   (stdout)
+import System.Environment (getArgs)
+import System.IO          (isEOF)
 
 import Prelude
 
@@ -24,7 +24,7 @@ import Prelude
 main :: IO ()
 main =
   getArgs >>= \case
-  [] -> return ()
+  []  -> return ()
   arr -> void $ process arr
 
 process :: [String] -> IO ()
@@ -61,9 +61,9 @@ matchLine word line
       ws = pack $ lowercase line
 
 rebuild :: String -> [String] -> String
-rebuild str [] = str
+rebuild str []      = str
 rebuild str ("":xs) = rebuild str xs
-rebuild str (x:xs) = "\t" ++ x ++ "\n" ++ rebuild str xs
+rebuild str (x:xs)  = "\t" ++ x ++ "\n" ++ rebuild str xs
 
 colorWord :: String -> [String] -> [String]
 colorWord _ [] = []

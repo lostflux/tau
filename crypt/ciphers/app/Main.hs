@@ -2,12 +2,12 @@
 
 module Main where
 
-import AbstractAlgebra    qualified as Algebra
-import Control.Monad      (join, void)
-import ShiftCipher        qualified as Shift
-import SubstitutionCipher qualified as Substitution
-import System.IO          (hFlush, stdout)
-import VigenereCipher     qualified as Vigenere
+import Ciphers.AbstractAlgebra    qualified as Algebra
+import Ciphers.ShiftCipher        qualified as Shift
+import Ciphers.SubstitutionCipher qualified as Substitution
+import Ciphers.VigenereCipher     qualified as Vigenere
+import Control.Monad              (join, void)
+import System.IO                  (hFlush, stdout)
 
 main :: IO ()
 main = do

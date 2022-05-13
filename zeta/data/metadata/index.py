@@ -11,6 +11,7 @@ __version__ = "0.0.1"
 def count_words():
   """
     This is a simple script to count the number of words in this directory.
+    
     It loops over all the lines in `.all` and counts the occurrence of each word,
     then sums them up. 
   """
@@ -31,6 +32,7 @@ def count_words():
 def index_pages():
   """
     Generate a friendly index of the pages.
+
     We create a csv and a tsv (in case one proves more convenient than the other).
   """
   docID = 0

@@ -4,17 +4,17 @@
 module Main where
 
 import Control.Arrow ((&&&))
-import Control.Monad (when)
-import Data.List     (isPrefixOf)
+import Control.Monad (when, (<$!>))
+import Data.List     (foldl', isPrefixOf)
 import Data.Set      (Set, (\\))
 import Data.Set      qualified as Set
+import GHC.IO.Unsafe (unsafePerformIO)
 import MyData.Parser (Link, Links, WebPage (..), isValid, targets)
 import MyData.Parser qualified as Parser
 import MyData.Trie   (Trie (..), (<|>))
 import MyData.Trie   qualified as Trie
 import System.Exit   (exitSuccess)
 import Text.Printf   (printf)
-import GHC.IO.Unsafe (unsafePerformIO)
 
 
 -- | Set to true to log debug info.
@@ -22,7 +22,7 @@ debug :: Bool
 debug = True
 
 limit :: Int
-limit = 2000
+limit = 5000
 
 main :: IO ()
 main = do
@@ -30,6 +30,9 @@ main = do
   crawl
   putStrLn "\nDone.\n"
 
+-- | The number of matches we need to approve a page.
+matchCount :: Int
+matchCount = 5
 
 seedURLs :: [Link]
 seedURLs = [
@@ -47,38 +50,35 @@ seedURLs = [
     -- "https://singularityhub.com/2022/04/20/gm-just-patented-a-self-driving-car-that-teaches-people-to-drive"
   ]
 
--- | The number of matches we need to approve a page.
-matchCount :: Int
-matchCount = 2
 
 crawl :: IO ()
 crawl = do
   let docID = 0
   let allWords = EmptyTrie
-  let seenURLs = Set.empty
   let allLinks = []
-  prevPages <- lines <$> readFile "data.backup/metadata/urls"
-  let urls = prevPages ++ seedURLs
+  !prevPages <- lines <$!> readFile "data.backup/metadata/urls"
+  let !urls = prevPages ++ seedURLs
+  let !seenURLs = Set.fromList urls
   iter urls seenURLs docID allWords allLinks
 
 iter :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
 iter queue seenURLs docID allWords allLinks = do
-  when (null queue || docID >= limit) $ do
+  when (null queue || docID >= limit) $! do
     let dir = "data"
-    writeFile (printf "%s/metadata/all" dir) $ show allWords
-    writeFile (printf "%s/metadata/urls" dir) $ unlines allLinks
+    writeFile (printf "%s/metadata/all" dir) $! show allWords
+    writeFile (printf "%s/metadata/urls" dir) $! unlines allLinks
 
     printf "Seen %d unique URLs.\n" (Set.size seenURLs + length queue)
     printf "THE END"
     exitSuccess
 
-  let (url, rest) = (head &&& tail) queue
+  let !(url, rest) = (head &&& tail) queue
   -- if Set.member url seenURLs then do
   --   printf "%sIgnDupl:  %s%s\n" yellow url reset
   --   iter rest seenURLs docID allWords
   -- else do
   printf "%sFetch:    %s%s\n" green url reset
-  page <- Parser.loadPage url
+  !page <- Parser.loadPage url
   if isValid page then do
     let !words = allWords <|> text page
     let !asList = Set.toList (links page \\ seenURLs)
@@ -88,11 +88,11 @@ iter queue seenURLs docID allWords allLinks = do
     if hasKeyWords page then do
       printf "%sHit  %3d: %s%s\n" blue docID url reset
       logR docID url page
-      iter q s (docID + 1) words (allLinks ++ [url])
+      iter q s (docID + 1) words $! allLinks ++ [url]
     else iter q s docID words allLinks
   else do
     printf "%sIgnBad:   %s%s\n" red url reset
-    let filtered = filter (not . isPrefixOf url) rest
+    let !filtered = filter (not . isPrefixOf url) rest
     iter filtered seenURLs docID allWords allLinks
 
 advance :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
@@ -103,20 +103,21 @@ advance q s docID words allLinks
 -- | Does the page have any of the specified set of keywords?
 hasKeyWords :: WebPage -> Bool
 hasKeyWords page =
-  check targets $ text page
+  check targets $! text page
     where
       check :: [String] -> Trie -> Bool
       check [] _        = True
       check _ EmptyTrie = False
       check words trie = count >= matchCount
         where
-          count = foldr (\x acc -> if Trie.lookup x trie then acc + 1 else acc) 0 words
-
+          !count = foldl' (\acc x -> if Trie.lookup x trie then acc + 1 else acc) 0 words
 
 logR :: Int -> Link -> WebPage -> IO ()
 logR docID url page = do
-  let file = printf "data/log/%d" docID
-  writeFile file $ printf "%s\n%s\n%s\n\n%s\n" ttl yr url $ show (text page)
+  let !file = printf "data/log/%d" docID
+  let !rawFile = printf "data/log/%d.txt" docID
+  writeFile file $! printf "%s\n%s\n%s\n\n%s\n" ttl yr url $! show (text page)
+  writeFile rawFile $! raw page
     where
       ttl = title page
       yr  = year page
@@ -130,4 +131,3 @@ green     = "\x1b[92m"
 red       = "\x1b[31m"
 yellow    = "\x1b[93m"
 reset     = "\x1b[0m"
-

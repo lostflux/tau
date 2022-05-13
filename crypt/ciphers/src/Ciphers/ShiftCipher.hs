@@ -4,7 +4,7 @@
 {-# OPTIONS -Wall -fwarn-tabs -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module ShiftCipher (
+module Ciphers.ShiftCipher (
     encrypt
   , decrypt
   , bruteforceAttack
@@ -12,7 +12,7 @@ module ShiftCipher (
   , shiftChar
 ) where
 
-import Common        (clean, lowercase, uppercase, charToInt)
+import Ciphers.Common        (clean, lowercase, uppercase, charToInt)
 import Data.Char     (chr, ord)
 import Data.Foldable (for_)
 import Data.List     (elemIndex)

@@ -1,0 +1,37 @@
+cradle:
+  cabal:
+    # - path: "app"
+    #   component: "ciphers:lib:Common"
+
+    # - path: "app"
+    #   component: "ciphers:lib:ShiftCipher"
+
+    # - path: "app"
+    #   component: "ciphers:lib:VigenereCipher"
+
+    # - path: "app"
+    #   component: "ciphers:lib:SubstitutionCipher"
+
+    # - path: "app"
+    #   component: "ciphers:lib:AbstractAlgebra"
+
+    # - path: "app/RSA.hs"
+    #   component: "ciphers:lib:RSA"
+
+    # - path: "app/Main.hs"
+    #   component: "ciphers:exe:ciphers"
+
+    # - path: "app/ShiftCipher.hs"
+    #   component: "ciphers:exe:ciphers"
+
+    # - path: "app/VigenereCipher.hs"
+    #   component: "ciphers:exe:ciphers"
+
+    # - path: "app/Common.hs"
+    #   component: "ciphers:exe:ciphers"
+
+    # - path: "app/SubstitutionCipher.hs"
+    #   component: "ciphers:exe:ciphers"
+
+    # - path: "app/AbstractAlgebra.hs"
+    #   component: "ciphers:exe:ciphers"
