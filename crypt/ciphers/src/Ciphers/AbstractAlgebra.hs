@@ -4,8 +4,8 @@
 {-# OPTIONS -Wall -fwarn-tabs #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Ciphers.AbstractAlgebra (
     addN
@@ -29,11 +29,11 @@ module Ciphers.AbstractAlgebra (
 where
 
 
+import Control.Monad          (void)
 import Prelude                hiding (gcd)
 import System.IO.Unsafe       (unsafePerformIO)
 import System.Random.Stateful (Random (random), getStdGen, setStdGen)
-import Text.Printf (printf)
-import Control.Monad (void)
+import Text.Printf            (printf)
 
 
 -- | Compute multiplication modulo N.
@@ -158,14 +158,19 @@ pollard' :: Integer -> IO (Integer, Integer)
 pollard' n = iter n 2 1
   where
     iter :: Integer -> Integer -> Integer -> IO (Integer, Integer)
-    iter n x i = do
-      let g = gcd (x - 1) n
-      void $ printf "n = %5d\ti = %5d\ta_i = %5d\tgcd = %5d\n" n i x g
-      if g /= 1 && g /= n
-        then return (g, n `div` g)
-        else if g == n
-          then iter n (randomInt 2 n) 1
-          else iter n ((x ^ i) `mod` n) (i + 1)
+    iter n a i = do
+
+      let g = gcd (a - 1) n
+      let next = i + 1
+
+      void $ printf "n = %5d\ta_%d = %5d\tgcd = %5d\n" n i a g
+
+      if g /= 1 && g /= n then
+        return (g, n `div` g)
+      else if g == n then
+        iter n (randomInt 2 n) 1
+      else 
+        iter n ((a ^ next) `mod` n) next
 
 
 randomInt :: Integer -> Integer -> Integer

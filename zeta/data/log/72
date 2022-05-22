@@ -31,7 +31,7 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     2 around
     1 article
     2 artificial
-   12 as
+   13 as
     7 at
     1 available
     2 away
@@ -39,7 +39,7 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 base
     6 been
     1 before
-    2 better
+    1 better
     1 between
     1 bio
     1 bit
@@ -47,7 +47,6 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 book
     1 bot
     1 box
-    1 brains
     1 browser
     1 browsing
     1 building
@@ -55,6 +54,7 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     9 but
     9 by
     7 can
+    2 catastrophe
     1 categorize
     1 center
     1 ceo
@@ -73,18 +73,18 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 construction
     1 contain
     1 continue
-    6 could
+    4 could
     1 counterfeit
     1 craft
     3 crawl
     1 created
-    3 data
+    4 data
     1 days
     1 decades
     1 deep
     1 define
     1 definitely
-    1 describe
+    1 demand
     1 description
     2 different
     1 discover
@@ -95,9 +95,9 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     3 douglas
     1 down
     1 drawn
-    2 drugs
     2 each
     1 early
+    1 economic
     1 effort
     1 employee
     1 end
@@ -109,6 +109,8 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     2 example
     1 except
     1 experience
+    1 exploded
+    1 exploitation
     2 extract
     1 factual
     1 fake
@@ -116,14 +118,13 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     2 few
     1 fill
     1 financial
-    1 find
     1 five
     1 flights
-   16 for
+   18 for
     1 found
     1 four
     2 free
-    8 from
+    9 from
     1 front
     1 fully
     1 function
@@ -140,6 +141,7 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 going
     1 good
     7 graph
+    1 ground
     1 grows
     1 had
     1 hand
@@ -149,14 +151,13 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 having
     1 headline
     3 heaven
-    3 help
+    2 help
     1 her
-    2 how
+    3 how
     5 human
     4 if
-    1 illness
     1 image
-   31 in
+   33 in
    18 is
    12 its
     1 journalism
@@ -169,10 +170,10 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 kind
    13 knowledge
     1 known
+    1 labor
     7 language
     1 large
     3 latest
-    1 lead
     1 learn
     9 like
     1 links
@@ -193,7 +194,6 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 may
     1 mean
     1 media
-    1 mental
     1 mention
     1 message
     1 meta
@@ -202,7 +202,7 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 milestone
     5 million
     6 mit
-    3 model
+    4 model
     1 month
     3 more
     1 most
@@ -215,7 +215,7 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 necessarily
     1 network
     1 never
-    8 new
+    9 new
     2 next
     2 nike
     2 nonstop
@@ -230,15 +230,15 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     8 or
     1 others
     1 otherwise
-    5 our
-    4 out
+    4 our
+    3 out
     1 over
     1 own
     5 pages
     1 parent
     1 paul
     1 paying
-    4 people
+    3 people
     5 perry
     1 pick
     1 picturemaking
@@ -322,14 +322,13 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 thread
     1 three
     2 tim
-   52 to
+   48 to
     1 trained
-    1 treat
-    1 trip
     1 trouble
     1 trustworthy
     2 trying
     6 tung
+    1 turned
     1 turns
     1 twitter
     1 types
@@ -338,8 +337,9 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 universal
     1 university
     5 up
-   14 us
+   12 us
     1 vast
+    1 venezuela
     1 verb
     2 version
     1 victoria
@@ -352,13 +352,12 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 well
     1 went
     4 were
-   10 what
+    9 what
     5 which
     1 who
     1 why
     5 will
     8 with
-    1 words
     2 works
     2 world
     1 worth
@@ -367,5 +366,6 @@ https://www.technologyreview.com/2020/09/04/1008156/knowledge-graph-ai-reads-web
     1 wrong
     1 yet
    12 you
+    1 zero
     1 zola
 

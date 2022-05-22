@@ -19,7 +19,7 @@ import Text.Printf   (printf)
 
 -- | Set to true to log debug info.
 debug :: Bool
-debug = True
+debug = False
 
 limit :: Int
 limit = 5000
@@ -56,18 +56,16 @@ crawl = do
   let docID = 0
   let allWords = EmptyTrie
   let allLinks = []
-  !prevPages <- lines <$!> readFile "data.backup/metadata/urls"
+  !prevPages <- filter (not . null) <$!> lines <$!> readFile "data/metadata/urls"
   let !urls = prevPages ++ seedURLs
   let !seenURLs = Set.fromList urls
-  iter urls seenURLs docID allWords allLinks
+  iter urls seenURLs docID allWords
 
-iter :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
-iter queue seenURLs docID allWords allLinks = do
+iter :: [Link] -> Links -> Int -> Trie -> IO ()
+iter queue seenURLs docID allWords = do
   when (null queue || docID >= limit) $! do
-    let dir = "data"
-    writeFile (printf "%s/metadata/all" dir) $! show allWords
-    writeFile (printf "%s/metadata/urls" dir) $! unlines allLinks
-
+    let dir = "data/metadata"
+    writeFile (printf "%s/all" dir) $! show allWords
     printf "Seen %d unique URLs.\n" (Set.size seenURLs + length queue)
     printf "THE END"
     exitSuccess
@@ -77,28 +75,28 @@ iter queue seenURLs docID allWords allLinks = do
   --   printf "%sIgnDupl:  %s%s\n" yellow url reset
   --   iter rest seenURLs docID allWords
   -- else do
-  printf "%sFetch:    %s%s\n" green url reset
+  printf "%sFetch:      %s%s\n" green url reset
   !page <- Parser.loadPage url
   if isValid page then do
     let !words = allWords <|> text page
     let !asList = Set.toList (links page \\ seenURLs)
-    let !s = foldr Set.insert seenURLs asList
+    let !s = foldl' (flip Set.insert) seenURLs asList
     let !q = rest ++ asList
-    -- when debug $ printf "\n\t\tqueue length : %d\n\t\tseen urls: %d\n\n" (length q) (Set.size seenURLs)
+    when debug $ printf "\n\t\tqueue length : %d\n\t\tseen urls: %d\n\n" (length q) (Set.size seenURLs)
     if hasKeyWords page then do
-      printf "%sHit  %3d: %s%s\n" blue docID url reset
+      printf "%sHit  %5d: %s%s\n" blue docID url reset
       logR docID url page
-      iter q s (docID + 1) words $! allLinks ++ [url]
-    else iter q s docID words allLinks
+      iter q s (docID + 1) words
+    else iter q s docID words
   else do
-    printf "%sIgnBad:   %s%s\n" red url reset
+    printf "%sIgnBad:     %s%s\n" red url reset
     let !filtered = filter (not . isPrefixOf url) rest
-    iter filtered seenURLs docID allWords allLinks
+    iter filtered seenURLs docID allWords
 
 advance :: [Link] -> Links -> Int -> Trie -> [String] -> IO ()
 advance q s docID words allLinks
-  | length q > limit = iter (drop (length q - (limit `div` 2)) q) s docID words allLinks
-  | otherwise = iter q s docID words allLinks
+  | length q > limit = iter (drop (length q - (limit `div` 2)) q) s docID words
+  | otherwise = iter q s docID words
 
 -- | Does the page have any of the specified set of keywords?
 hasKeyWords :: WebPage -> Bool

@@ -136,7 +136,7 @@ getWords doc = do
     -- >>> arr (filter checkDict)
   let !trie = foldl' (foldr insert) EmptyTrie $!
         map (filter (\x -> checkDict x && not ("author" `isInfixOf` x || "http" `isInfixOf` x)) . map clean) text
-  let !raw = unlines $! map unwords text
+  let !raw = unlines $! fix $! map unwords text
   return (trie, raw)
   -- ! review the change here!! How does it affect functionality?
 
@@ -243,3 +243,14 @@ tP3 = loadPage "https://singularityhub.com/2022/04/20/gm-just-patented-a-self-dr
 getFirst :: [String] -> String
 getFirst []    = ""
 getFirst (x:_) = x
+
+fix :: [String] -> [String]
+fix [] = []
+fix (x:y:xs)
+  | null x        = fix (y:xs)
+  | last x /= '.' = fix $! (x ++ y) : xs 
+  | otherwise     = x : fix (y:xs)
+fix (x:xs)
+  | null x        = fix xs
+  | last x /= '.' = if null xs then [x] else [x ++ head xs]
+  | otherwise     = x : xs

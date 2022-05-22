@@ -150,3 +150,9 @@ reset     = "\x1b[0m"
 
 lowercase :: String -> String
 lowercase = map toLower
+
+randomOp :: Int -> Int
+randomOp x = x + 1
+
+-- >>> randomOp 10
+
