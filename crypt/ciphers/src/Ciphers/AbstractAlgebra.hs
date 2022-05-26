@@ -25,6 +25,7 @@ module Ciphers.AbstractAlgebra (
   , randomInt
   , pollard
   , pollard'
+  , pollardRho
   )
 where
 
@@ -33,7 +34,10 @@ import Control.Monad          (void)
 import Prelude                hiding (gcd)
 import System.IO.Unsafe       (unsafePerformIO)
 import System.Random.Stateful (Random (random), getStdGen, setStdGen)
-import Text.Printf            (printf)
+import Text.Printf            (printf, PrintfArg)
+import Math.NumberTheory.Roots (integerSquareRoot)
+import Data.List (elemIndex)
+import Data.Maybe (fromJust)
 
 
 -- | Compute multiplication modulo N.
@@ -90,7 +94,7 @@ divN n a b = (a * invN n b) `mod` n
 invN :: Integral p => p -> p -> p
 invN _ 0 = 0
 invN _ 1 = 1
-invN n a = iter n a 1
+invN n a = iter n (a `mod` n) 1
   where
     mul = mulN n
     iter n a b
@@ -169,8 +173,147 @@ pollard' n = iter n 2 1
         return (g, n `div` g)
       else if g == n then
         iter n (randomInt 2 n) 1
-      else 
+      else
         iter n ((a ^ next) `mod` n) next
+
+pollardRho :: Integer -> IO (Integer, Integer)
+pollardRho n = iter 2 2 1 1
+  where
+    iter :: Integer -> Integer -> Integer -> Integer -> IO (Integer, Integer)
+    iter x y d i
+      | d == n = return (1, n)
+      | otherwise = do
+        let x' = g x
+        let y' = (g . g) y
+        let d' = gcd (abs $ x' - y') n
+        void $ printf "i = %d, x = %d, y = %d, d = %d\n" i x' y' d'
+        if d' > 1 then do
+          return (d', n `div` d')
+        else
+          iter x' y' d' (i + 1)
+      where
+        g x = (x^2 + 1) `mod` n
+
+fermi :: Integer -> IO (Integer, Integer)
+fermi n = iter $ ceiling $ sqrt (fromInteger n :: Double)
+  where
+    iter :: Integer -> IO (Integer, Integer)
+    iter a
+      | a > n = do
+        putStrLn "Failed to find factor"
+        return (1, n)
+      | otherwise = do
+        let b2 = a^2 - n
+        let b = sqrt (fromInteger b2 :: Double)
+        printf "%d, %f\n" a b
+        if isInt b then do
+          let intB = floor b
+          printf "match found: %d, %d\n" a intB
+          printf "product = %d\n" $ a * intB
+          return (a, intB)
+        else
+          iter (a + 1)
+
+test :: Integer -> IO ()
+test n = print (fromIntegral n :: Double)
+
+isInt :: Double -> Bool
+isInt x = x == fromInteger (floor x)
+
+isComposite :: Integer -> IO Bool
+isComposite n = iter n 2
+  where
+    iter :: Integer -> Integer -> IO Bool
+    iter n i
+      | i >= n = return False
+      | otherwise = do
+        let val = i ^ (n - 1) `mod` n
+        void $ printf "%d ^ %d `mod` %d = %d\n" i (n - 1) n val
+        if val == 1 then
+          return True
+        else
+          iter n (i + 1)
+
+checkComposite :: Integer -> IO ()
+checkComposite n = iter n 2
+  where
+    iter :: Integer -> Integer -> IO ()
+    iter n i
+      | i >= n = return ()
+      | otherwise = do
+        let val = i ^ (n - 1) `mod` n
+        void $ printf "%d ^ %d `mod` %d = %d\n" i (n - 1) n val
+        iter n (i + 1)
+
+squareN :: Integral a => a -> a -> a
+squareN base n = (n ^ 2) `mod` base
+
+babyStep :: Integral a => a -> a -> a -> Int -> [a]
+babyStep base h g count = take count $ iterate (`mul` g) h
+  where
+    mul = mulN base
+
+giantStep :: Integral a => a -> a -> a -> Int -> [a]
+giantStep base g m count = take count $ iterate (`mul` (g ^ m)) 1
+  where
+    mul = mulN base
+
+powN :: (Integral a, Integral b) => a -> a -> b -> a
+powN base n pow = (n ^ pow) `mod` base
+
+babyGiant :: (Integral a, PrintfArg a) => a -> a -> a -> a -> Int -> IO a
+babyGiant base h g m count = do
+  let baby = babyStep base h g count
+  let giant = giantStep base g m count
+  iter baby giant 0
+  where
+    iter :: (Integral a, PrintfArg a) => [a] -> [a] -> Int -> IO a
+    iter [] _ _ = return (-1)
+    iter _ [] _ = return (-1)
+    iter babySteps (x:xs) i = do
+      if x `elem` babySteps then do
+        printf "Found match: %d\n" x
+        let index' = index x babySteps
+        printf "babystep = %d\ngiantstep = %d\n" index' i
+        return x
+      else
+        iter babySteps xs $ i + 1
+      where
+        index item list = fromJust $ elemIndex item list
+
+phi :: Integer -> Integer
+phi n = fromIntegral $ length $ primeFactors n
+
+pohligHellman :: Integer -> Integer -> Integer -> IO ()
+pohligHellman modulus number base = mapM_ check factors'
+  where
+    p = modulus - 1
+    factors' = primeFactors p
+    check :: Integer -> IO ()
+    check factor = do
+      let l = highestPower factor p 
+      let nExp = (factor ^ l)
+      let rem = modulus `div` nExp
+      let aRem = powN modulus number rem  
+      let range = [0..nExp-1]
+      let results = zip range $ map (\x -> powN modulus base (rem * x)) range
+      printf "check %d = %d\n\n" nExp $ find' aRem results
+      print results
+
+find' :: Integer -> [(Integer, Integer)] -> Integer
+find' item arr = iter item arr
+  where
+    iter _ [] = -1
+    iter item ((r, nR):rest)
+      | nR == item = r
+      | otherwise = iter item rest
+
+highestPower :: Integer -> Integer -> Integer
+highestPower a b = iter a b 0
+  where
+    iter a b i
+      | b `mod` (a ^ (i+1)) == 0 = iter a b (i+1)
+      | otherwise = i 
 
 
 randomInt :: Integer -> Integer -> Integer
@@ -179,7 +322,6 @@ randomInt lo hi = unsafePerformIO $ do
   return $! lo + toInteger num `mod` (hi - lo + 1)
 
 randomN :: IO Int
-{-# NOINLINE randomN #-}
 randomN = do
   gen <- getStdGen
   let (num, newGen) = random gen

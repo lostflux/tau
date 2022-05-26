@@ -13,7 +13,11 @@ def count_words():
     This is a simple script to count the number of words in this directory.
     
     It loops over all the lines in `.all` and counts the occurrence of each word,
-    then sums them up. 
+    then sums them up.
+
+    HACK:
+    This is a hacky way to count the number of words in the corpus.
+    >>> count_words()
   """
   total = 0
   with open("all", "r") as f:
