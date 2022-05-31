@@ -26,11 +26,15 @@ module Ciphers.AbstractAlgebra (
   , pollard
   , pollard'
   , pollardRho
+  , findFactor, n
+  , a, b, p, q, powP
+  , n', a', b', c', d'
+  , g_1, g_2
   )
 where
 
 
-import Control.Monad          (void)
+import Control.Monad          (void, when)
 import Prelude                hiding (gcd)
 import System.IO.Unsafe       (unsafePerformIO)
 import System.Random.Stateful (Random (random), getStdGen, setStdGen)
@@ -143,10 +147,10 @@ factors' :: Integer -> [Integer]
 factors' n = reverse $ factorize n >>= \(_, j) -> [j]
 
 primeFactors :: Integer -> [Integer]
-primeFactors n = sieve [] $ factors n
+primeFactors n = sieve $ factors n
   where
-    sieve acc []     = acc
-    sieve acc (x:xs) = sieve (acc ++ [x]) [i | i <- xs, i `mod` x /= 0 ]
+    sieve []     = []
+    sieve (x:xs) = x : sieve (filter (\y -> y `mod` x /= 0) xs)
 
 pollard :: Integer -> (Integer, Integer)
 pollard n = iter n 2 1
@@ -259,7 +263,22 @@ giantStep base g m count = take count $ iterate (`mul` (g ^ m)) 1
     mul = mulN base
 
 powN :: (Integral a, Integral b) => a -> a -> b -> a
-powN base n pow = (n ^ pow) `mod` base
+powN base n pow = (n `power` pow) `mod` base
+  where
+    power n p
+      | p == 0    = 1
+      | p == 1    = n
+      | p == 2    = n^2
+      | even p    = (power n (p `div` 2) ^ 2) `mod` base
+      | otherwise = (n * (power n ((p - 1) `div` 2) ^ 2)) `mod` base
+
+a, b, p, q :: Integer
+q = 5
+p = 27781703927
+a = 1002883876
+b = 21790753397
+powP :: Integer -> Integer -> Integer
+powP = powN p
 
 babyGiant :: (Integral a, PrintfArg a) => a -> a -> a -> a -> Int -> IO a
 babyGiant base h g m count = do
@@ -292,7 +311,7 @@ pohligHellman modulus number base = mapM_ check factors'
     check :: Integer -> IO ()
     check factor = do
       let l = highestPower factor p 
-      let nExp = (factor ^ l)
+      let nExp = factor ^ l
       let rem = modulus `div` nExp
       let aRem = powN modulus number rem  
       let range = [0..nExp-1]
@@ -315,6 +334,58 @@ highestPower a b = iter a b 0
       | b `mod` (a ^ (i+1)) == 0 = iter a b (i+1)
       | otherwise = i 
 
+findFactor :: Integer -> Integer -> IO [Integer]
+findFactor n count = iter start 1 count []
+  where
+    start = ceiling $ sqrt (fromInteger n :: Double)
+    iter :: Integer -> Integer -> Integer -> [Integer] -> IO [Integer]
+    iter start step count acc
+      | count <= 0 = do
+        print acc
+        return acc
+      | otherwise = do
+        let current = start + step ^ 2
+        let (d, m) = divMod n current
+        let (d', m') = divMod n step
+        -- printf "%d mod %d = %d\n" n current m
+        if m == 0 && (m' == 0 && step /= 1) then do
+          printf "Found factors: %d %d\n" current d
+          printf "Found factors: %d %d\n" step d'
+          iter start (step+1) (count-4) (current : d : step : d' : acc)
+        
+        else if m == 0 then do
+          printf "Found factors: %d %d\n" current d
+          iter start (step+1) (count-2) (current : d : acc)
+
+        else if m' == 0 && step /= 1 then do
+          printf "Found factors: %d %d\n" step d'
+          iter start (step+1) (count-2) (step : d' : acc)
+
+        else iter start (step+1) count acc
+
+n :: Integer
+n = 999999999999999999999999999999999919
+
+
+
+n', a', b', c', d' :: Integer
+n' = 2^29 - 1
+a' = 258883717
+b' = 301036180
+c' = 126641959
+d' = 2 * 3^2 * 5 * 11 * 29 * 79
+
+
+a_1 :: Integer
+a_1 = a' * b' * c'
+
+g_1, g_2 :: IO Integer
+g_1 = gcdL (a_1 + d') n'
+g_2 = gcdL (a_1 - d') n'
+
+
+
+
 
 randomInt :: Integer -> Integer -> Integer
 randomInt lo hi = unsafePerformIO $ do
@@ -327,3 +398,4 @@ randomN = do
   let (num, newGen) = random gen
   setStdGen newGen
   return num
+
