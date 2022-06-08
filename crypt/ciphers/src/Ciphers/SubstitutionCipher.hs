@@ -21,11 +21,20 @@ module Ciphers.SubstitutionCipher (
   , set
   , rotate
   , problem
-) where
 
-import Ciphers.Common (dropLines)
-import Data.Foldable  (for_)
-import Data.List      (group, sort, sortBy)
+  -- random stuff
+  , cp
+  , swapLetter
+  , ngrams
+  , validswaps
+  , swapLetters
+  , apply, print'
+  , pref, inf
+, replace) where
+
+import Ciphers.Common (dropLines, uppercase, lowercase)
+import Data.Foldable  (for_, Foldable (foldl'))
+import Data.List      (group, sort, sortBy, tails, isPrefixOf, isInfixOf)
 import Data.Maybe     (fromMaybe)
 import GHC.IO.Handle  (hFlush)
 import Prelude hiding ()
@@ -276,3 +285,74 @@ getKey matchings' n = iter matchings' (26 `div` n) 0 ((26 `mod` n) + 1) ""
       | currentstep == 0 = iter xs stepsize 1 (overflow - 1) (acc ++ [snd x])
       | otherwise = iter xs stepsize ((currentstep + 1) `mod` (stepsize + 1)) overflow acc
 
+swapLetter :: Pairing -> String -> String
+swapLetter _ [] = []
+swapLetter pair@(old, new) (x:xs)
+  | x == old = new : swapLetter pair xs
+  | otherwise = x : swapLetter pair xs
+
+swapLetters :: [Pairing] -> String -> String
+swapLetters xs str = foldl' (flip swapLetter) str xs
+
+
+-- final stuff
+cp :: String
+cp = uppercase "ovdkljoodkbplabzgufvdklacvqlkbzvwljjvgvlybzvzujjqlkbzvjlyvsuyvdtlfvzvkdyobzvjlrdjlyvcizljlfvzvkgufvdklacvgufvdklacviubzdiujjqlkbzvclyclqljoodkbplabzqlkbzvodagzbvkclqodkbplabzbzlagzklayobzvgukojvovdkbzbzvrkldpzvkcsvjjlybzvpkvpduycbzvrzdfvbzvcbujjylkbzuybzvukzvdkbcbzvzujjiuyocuybzvukfvuycdyobzvgkdyubvlqyvizdpsczukvuybzvukpacwjvcdyobzvuktkduycdzuybqlkwuszvkcuhucbzvlkovklqqufvploajlsuccpdjj"
+-- cp' = swapLetter 'V' 'e' cp
+-- cp'' = swapLetter 'Z' 't' cp'
+validswaps :: [Pairing]
+-- validswaps = [('B', 't'), ('Z', 'h'), ('V', 'e'), ('L', 'w'), ('K', 'i')] --, ('J', 'o')]
+
+validswaps = [('B', 't'), ('Z', 'h'), ('V', 'e'), ('K', 'r'), ('L', 'o'), ('D', 'a')] --, ('D', 'w'), ('F', 'r')] --, ('D', 'i')] --, ('J', 'o')]
+
+-- validswaps = [('B', 't'), ('Z', 'h'), ('V', 'e'), ('Y', 'w'), ('O', 'i'), ('U', 'r'), ('J', 'o')]
+
+
+ngrams :: Int -> String -> [String]
+ngrams n = filter (not . null) . map (take' n) . tails
+  where
+    take' :: Int -> String -> String
+    take' n s
+      | length s < n = ""
+      | otherwise = take n s
+
+apply :: String
+apply = swapLetters validswaps cp
+
+replace :: String -> String -> String -> String
+replace old new = swapLetters (zip old new)
+
+
+
+linelength :: Int
+linelength = length "OeDiwoOODitPwAthGrFeDiwACeQwitheWwooeGewYthehrooQwitheowYeSrYeDTw"
+print' :: String -> IO ()
+print' = mapM_ putStrLn . split' linelength
+  where
+    split' :: Int -> String -> [String]
+    split' _ [] = []
+    split' n s = take n s : split' n (drop n s)
+
+cartesian :: [Int] -> [[Int]]
+cartesian = pure >>= traverse
+
+-- >>> length $ cartesian [1..5]
+-- 3125
+
+pref :: (Eq a) => [a] -> [Freq [a]] -> [Freq [a]]
+pref _ [] = []
+pref x (y:ys)
+  | x `isPrefixOf` item y = y : pref x ys
+  | otherwise = pref x ys
+
+inf :: (Eq a) => [a] -> [Freq [a]] -> [Freq [a]]
+inf _ [] = []
+inf x (y:ys)
+  | x `isInfixOf` item y = y : inf x ys
+  | otherwise = inf x ys
+
+-- postf :: (Eq a) => [a] -> [Freq [a]] -> [Freq [a]]
+-- postf _ [] = []
+-- postf x (y:ys)
+--   | x `isPostfixOf` (item y) = y : postf x ys
+--   | otherwise = postf x ys

@@ -13,11 +13,13 @@ module Ciphers.VigenereCipher (
   , decryptShift
   , equalities
   , process
+  , cp
 ) where
 
 import Ciphers.Common      (clean, invWord, lowercase, splitT, toInt, uppercase)
 import Ciphers.ShiftCipher (shiftChar)
-import Data.Foldable       (maximumBy)
+import Ciphers.SubstitutionCipher (frequencies, standardFrequencies, Freq(..))
+import Data.Foldable       (maximumBy, for_)
 import Data.List           (elemIndices, groupBy, sort)
 import Prelude             hiding (repeat)
 
@@ -86,11 +88,11 @@ getStr = lowercase . clean <$> readFile "../data/vigenere01"
 
 process :: IO ()
 process = do
-  str <- getStr
+  let str = cp
   -- let str = "hellohellwhellp"
   print $ coincidences str
   print $ ngrams 3 str
-  putStrLn $ tabulate $ recurrence (ngrams 3 str)
+  putStrLn $ tabulate $ recurrence (ngrams 4 str)
   return ()
 
 tabulate :: [(String, [Int])] -> String
@@ -130,11 +132,15 @@ recurrence strings = rmdups $ iter strings 0 []
 -- decrypt' = putStrLn . lowercase <$> (`decrypt` "england") =<< getStr
 
 
--- matrix :: IO [String]
--- matrix = do
---   text <- getStr
---   let text' = clean . lowercase $ text
---   let m = splitT 7 text'
---   for_ m $ \x -> do
---     putStrLn x
---   return m
+matrix :: IO [String]
+matrix = do
+  let text = cp
+  let text' = clean . lowercase $ text
+  let m = splitT 8 text'
+  for_ m $ \x -> do
+    putStrLn x
+  return m
+
+-- final stuff
+cp :: String
+cp = "hcbxpcjlemyzlgjwagtfjhtnvvriarrqzvuqbipjrqhggrzwtfnahgkqfesrqszvodyabgcwafvvrotsotdreoaqnbnfzgcbqetqloafvvnpapnqvzrzvyarnrpzgoashycwzvvwaphmbssvvhyammusjhnsfwnbbhbshhuwtkjylhrangemwsjnvprdatnrpshseanrumabcbbphcacygjogiainojnvvbsdmhcbqgtvjeyloavjoianmrrln"

@@ -5,7 +5,6 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE BangPatterns          #-}
 
 module Ciphers.AbstractAlgebra (
     addN
@@ -13,6 +12,7 @@ module Ciphers.AbstractAlgebra (
   , subN
   , divN
   , invN
+  , powN
   , gcd
   , gcdL
   , prompt
@@ -22,26 +22,28 @@ module Ciphers.AbstractAlgebra (
   , factors
   , factors'
   , primeFactors
-  , randomInt
-  , pollard
-  , pollard'
+  -- , randomInt
+  -- , pollard
+  -- , pollard'
   , pollardRho
   , findFactor, n
   , a, b, p, q, powP
   , n', a', b', c', d'
   , g_1, g_2
-  )
+  , phi, phi'
+  , fermi)
 where
 
 
 import Control.Monad          (void, when)
 import Prelude                hiding (gcd)
 import System.IO.Unsafe       (unsafePerformIO)
-import System.Random.Stateful (Random (random), getStdGen, setStdGen)
+-- import System.Random.Stateful (Random (random), getStdGen, setStdGen)
 import Text.Printf            (printf, PrintfArg)
-import Math.NumberTheory.Roots (integerSquareRoot)
+-- import Math.NumberTheory.Roots (integerSquareRoot)
 import Data.List (elemIndex)
 import Data.Maybe (fromJust)
+import Data.Foldable (foldr')
 
 
 -- | Compute multiplication modulo N.
@@ -135,7 +137,7 @@ run action base a b = case action of
   _ -> return 0
 
 factorize :: Integer -> [(Integer, Integer)]
-factorize n = [(i, n `div` i) | i <- [2.. rootN], n `mod` i == 0]
+factorize n = [(i, n `div` i) | i <- [2..n], n `mod` i == 0]
   where
     rootN :: Integer
     rootN = fromIntegral $ (+ 1) . floor . sqrt . fromIntegral $ n
@@ -152,33 +154,33 @@ primeFactors n = sieve $ factors n
     sieve []     = []
     sieve (x:xs) = x : sieve (filter (\y -> y `mod` x /= 0) xs)
 
-pollard :: Integer -> (Integer, Integer)
-pollard n = iter n 2 1
-  where
-    iter n x i
-      | g /= 1 && g /= n    = (g, n `div` g)
-      | g == n              = iter n (randomInt 2 n) 1
-      | otherwise           = iter n ((x ^ i) `mod` n) (i + 1)
-        where
-          g = gcd (x - 1) n
+-- pollard :: Integer -> (Integer, Integer)
+-- pollard n = iter n 2 1
+--   where
+--     iter n x i
+--       | g /= 1 && g /= n    = (g, n `div` g)
+--       | g == n              = iter n (randomInt 2 n) 1
+--       | otherwise           = iter n ((x ^ i) `mod` n) (i + 1)
+--         where
+--           g = gcd (x - 1) n
 
-pollard' :: Integer -> IO (Integer, Integer)
-pollard' n = iter n 2 1
-  where
-    iter :: Integer -> Integer -> Integer -> IO (Integer, Integer)
-    iter n a i = do
+-- pollard' :: Integer -> IO (Integer, Integer)
+-- pollard' n = iter n 2 1
+--   where
+--     iter :: Integer -> Integer -> Integer -> IO (Integer, Integer)
+--     iter n a i = do
 
-      let g = gcd (a - 1) n
-      let next = i + 1
+--       let g = gcd (a - 1) n
+--       let next = i + 1
 
-      void $ printf "n = %5d\ta_%d = %5d\tgcd = %5d\n" n i a g
+--       void $ printf "n = %5d\ta_%d = %5d\tgcd = %5d\n" n i a g
 
-      if g /= 1 && g /= n then
-        return (g, n `div` g)
-      else if g == n then
-        iter n (randomInt 2 n) 1
-      else
-        iter n ((a ^ next) `mod` n) next
+--       if g /= 1 && g /= n then
+--         return (g, n `div` g)
+--       else if g == n then
+--         iter n (randomInt 2 n) 1
+--       else
+--         iter n ((a ^ next) `mod` n) next
 
 pollardRho :: Integer -> IO (Integer, Integer)
 pollardRho n = iter 2 2 1 1
@@ -209,7 +211,7 @@ fermi n = iter $ ceiling $ sqrt (fromInteger n :: Double)
       | otherwise = do
         let b2 = a^2 - n
         let b = sqrt (fromInteger b2 :: Double)
-        printf "%d, %f\n" a b
+        -- printf "%d, %f\n" a b
         if isInt b then do
           let intB = floor b
           printf "match found: %d, %d\n" a intB
@@ -262,13 +264,14 @@ giantStep base g m count = take count $ iterate (`mul` (g ^ m)) 1
   where
     mul = mulN base
 
-powN :: (Integral a, Integral b) => a -> a -> b -> a
-powN base n pow = (n `power` pow) `mod` base
+powN :: (Integral a, Integral b) => a -> a -> a -> a
+powN base n pow = n `power` pow
   where
     power n p
+      | p < 0     = power n (base + p)
       | p == 0    = 1
-      | p == 1    = n
-      | p == 2    = n^2
+      | p == 1    = n `mod` base
+      | p == 2    = n^2 `mod` base
       | even p    = (power n (p `div` 2) ^ 2) `mod` base
       | otherwise = (n * (power n ((p - 1) `div` 2) ^ 2)) `mod` base
 
@@ -301,7 +304,28 @@ babyGiant base h g m count = do
         index item list = fromJust $ elemIndex item list
 
 phi :: Integer -> Integer
-phi n = fromIntegral $ length $ primeFactors n
+phi n = iter 0 0 n
+  where
+    iter :: Integer -> Integer -> Integer -> Integer
+    iter i acc n
+      | i == n = acc
+      | gcd n i == 1 = iter (i+1) (acc + 1) n
+      | otherwise = iter (i+1) acc n
+
+
+-- >>> phi 15
+-- 8
+
+
+phi' :: Integer -> Integer
+phi' n = foldr' (\x acc -> acc * (x-1)) 1 $ primeFactors n
+
+-- >>> primeFactors 15
+-- [3,5]
+
+-- >>> phi' 15
+-- 8
+
 
 pohligHellman :: Integer -> Integer -> Integer -> IO ()
 pohligHellman modulus number base = mapM_ check factors'
@@ -387,15 +411,15 @@ g_2 = gcdL (a_1 - d') n'
 
 
 
-randomInt :: Integer -> Integer -> Integer
-randomInt lo hi = unsafePerformIO $ do
-  !num <- randomN
-  return $! lo + toInteger num `mod` (hi - lo + 1)
+-- randomInt :: Integer -> Integer -> Integer
+-- randomInt lo hi = unsafePerformIO $ do
+--   !num <- randomN
+--   return $! lo + toInteger num `mod` (hi - lo + 1)
 
-randomN :: IO Int
-randomN = do
-  gen <- getStdGen
-  let (num, newGen) = random gen
-  setStdGen newGen
-  return num
+-- randomN :: IO Int
+-- randomN = do
+--   gen <- getStdGen
+--   let (num, newGen) = random gen
+--   setStdGen newGen
+--   return num
 

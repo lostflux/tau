@@ -8,6 +8,9 @@
 __author__  = "Amittai Siavava"
 __version__ = "0.0.1"
 
+from os import mkdir
+from collections import Counter
+
 def count_words():
   """
     This is a simple script to count the number of words in this directory.
@@ -59,6 +62,43 @@ def index_pages():
         break
   print("Done.")
 
+def categorize():
+  """
+    Categorize the pages by year.
+  """
+
+  docID = 0
+  years = Counter()
+  while True:
+    try:
+      with open(f"../log/{docID}.txt", "r") as doc, open(f"../log/{docID}", "r") as meta:
+        title = meta.readline().strip()
+        year = meta.readline().strip()
+        url = meta.readline().strip()
+        text = doc.read()
+        doc.close()
+        meta.close()
+
+        if year == "":
+          year = "unknown"
+
+        try:
+          mkdir(f"../categorized/{year}")
+        except:
+          pass
+
+        id = years.get(year, 0)
+        with open(f"../categorized/{year}/{id}.txt", "w") as f:
+          f.write(f"old id = {docID}\n{title}\n{year}\n{url}\n\n{text}")
+          f.close()
+        years[year] = id + 1
+        docID += 1
+        
+    except:
+      break
+
+
 if __name__ == "__main__":
   count_words()
   index_pages()
+  categorize()

@@ -24,6 +24,7 @@ library Ciphers
     Ciphers.RSA
     Ciphers.SubstitutionCipher
     Ciphers.AbstractAlgebra
+    Ciphers.AffineCipher
   hs-source-dirs:      src
   build-depends:       base >=4.16.0.0, random, integer-roots
   default-language:    Haskell2010
