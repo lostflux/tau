@@ -1,0 +1,10 @@
+numpy
+pathlib
+pandas
+sklearn
+matplotlib
+ipython
+pyldavis
+wordcloud
+gensim
+tensorflow
