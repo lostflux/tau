@@ -56,6 +56,8 @@ repr (Trie v cs _) = "(" ++ show v ++ " " ++ concatMap repr cs ++ ")"
 -- | Get the size of a Trie.
 --
 -- @O(n)@
+--
+-- @(size EmptyTrie) == 0@
 size :: Trie -> Int
 size EmptyTrie     = 0
 size (Trie _ cs _) = foldr (\c acc -> size c + acc) 1 cs

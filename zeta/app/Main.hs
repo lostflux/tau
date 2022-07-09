@@ -15,6 +15,7 @@ import MyData.Trie   (Trie (..), (<|>))
 import MyData.Trie   qualified as Trie
 import System.Exit   (exitSuccess)
 import Text.Printf   (printf)
+import System.Posix.Internals (puts)
 
 
 -- | Set to true to log debug info.
@@ -129,3 +130,8 @@ green     = "\x1b[92m"
 red       = "\x1b[31m"
 yellow    = "\x1b[93m"
 reset     = "\x1b[0m"
+
+randomTest :: String -> IO String
+randomTest = puts >> return
+
+-- >>> randomTest "Hello"
