@@ -1,6 +1,6 @@
 module Algebra where
 
-import Algebra.Group
+import Algebra.Group ()
 
 test :: IO ()
 test = putStrLn "test"

@@ -5,6 +5,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Ciphers.AbstractAlgebra (
     addN
@@ -31,11 +32,11 @@ module Ciphers.AbstractAlgebra (
   , n', a', b', c', d'
   , g_1, g_2
   , phi, phi'
-  , fermi)
+  , fermi, order)
 where
 
 
-import Control.Monad          (void, when)
+import Control.Monad          (void, when, forM_)
 import Prelude                hiding (gcd)
 import System.IO.Unsafe       (unsafePerformIO)
 -- import System.Random.Stateful (Random (random), getStdGen, setStdGen)
@@ -44,6 +45,8 @@ import Text.Printf            (printf, PrintfArg)
 import Data.List (elemIndex)
 import Data.Maybe (fromJust)
 import Data.Foldable (foldr')
+import Data.Traversable (forM)
+import System.Exit (exitSuccess)
 
 
 -- | Compute multiplication modulo N.
@@ -60,6 +63,16 @@ subN n a b = (a - b) `mod` n
 
 gcd :: Integer -> Integer -> Integer
 gcd = euclideanA
+
+order :: Integer -> Integer -> IO ()
+order num base = do
+  forM_ [1..] $ \(i :: Int) -> do
+    let pow = num ^ i
+    let res = pow `mod` base
+    when (res == 1) $ do
+      printf "Found %d ^ %d = %d == 1 (mod %d)\n" num i pow base
+      fail "Found, exiting..."
+
 
 gcdL :: Integer -> Integer -> IO Integer
 gcdL = euclideanL
@@ -315,6 +328,9 @@ phi n = iter 0 0 n
 
 -- >>> phi 15
 -- 8
+
+-- >>> phi 360
+-- 96
 
 
 phi' :: Integer -> Integer

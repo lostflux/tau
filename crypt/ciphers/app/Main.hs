@@ -42,8 +42,8 @@ main = do
       let key2'' =
             0x4753E0CAF7D554133E69777ABDCB6DA7298437BBD66D9B4ED854ABEA62362
       print $ key == key'
-      results <- Vigenere.decrypt key message
-      putStrLn $ "\nresults: \n\t" ++ results
+      -- results <- Vigenere.decrypt key message
+      -- putStrLn $ "\nresults: \n\t" ++ results
       main
     5 -> do
       Substitution.problem
